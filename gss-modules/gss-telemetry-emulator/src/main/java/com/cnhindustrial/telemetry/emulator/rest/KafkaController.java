@@ -8,31 +8,22 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Date;
-import java.util.Random;
-
 @RestController
 @RequestMapping(value = "/api/kafka")
 public class KafkaController {
 
     private final Producer producer;
-
-    public static final Random RANDOM = new Random();
+    private final TelemetryMessageService messageService;
 
     @Autowired
-    KafkaController(Producer producer) {
+    KafkaController(Producer producer, TelemetryMessageService messageService) {
         this.producer = producer;
+        this.messageService = messageService;
     }
 
     @PostMapping(value = "/publish")
     public void sendMessageToKafkaTopic(@RequestParam("message") String message) {
-
-        final TelemetryDto telemetryDto = new TelemetryDto();
-
-        telemetryDto.setVehicleId(message);
-        telemetryDto.setDate(new Date());
-        telemetryDto.setValue(RANDOM.nextInt());
-
+        final TelemetryDto telemetryDto = messageService.createTelemetryDto(message);
         this.producer.sendMessage(telemetryDto);
     }
 }
