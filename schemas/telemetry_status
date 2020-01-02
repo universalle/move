@@ -1,0 +1,33 @@
+geomesa {
+  sfts {
+    telemetry_status = {
+      fields = [
+        { name = time,                     type = Timestamp, default = true }
+        { name = pos_lon_lat,              type = Point,     default = true, srid = 4326 }
+        { name = assetId,                  type = String,    index = true }
+        { name = pos_pdop,                 type = Integer }
+        { name = pos_current,              type = Boolean }
+        { name = pos_satcount,             type = Integer }
+        { name = pos_fixtype,              type = Integer }
+        { name = pos_alt,                  type = Double }
+        { name = pos_time,                 type = Timestamp }
+        { name = pos_speed,                type = Double }
+        { name = pos_direction,            type = Double }
+        { name = status_duty,              type = Integer }
+        { name = status_device,            type = String }
+        { name = networkinfo_rssi,         type = Integer }
+        { name = networkinfo_MNC,          type = Integer }
+        { name = networkinfo_NetworkStatus,type = String }
+        { name = networkinfo_connection,   type = String }
+        { name = networkinfo_MCC,          type = Integer }
+        { name = networkinfo_operatorName, type = String }
+        { name = reports,                  type = String, json = true }
+        { name = events,                   type = String, json = true }
+        { name = deviceid,                 type = String }
+        { name = from,                     type = String }
+        { name = to,                       type = String }
+        { name = techType,                 type = String }
+      ]
+    }
+  }
+}
