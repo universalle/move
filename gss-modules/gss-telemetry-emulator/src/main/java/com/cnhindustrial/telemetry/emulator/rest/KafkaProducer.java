@@ -12,9 +12,9 @@ import org.springframework.stereotype.Service;
 
 @Service
 @Scope("prototype")
-public class Producer {
+public class KafkaProducer {
 
-    private static final Logger logger = LoggerFactory.getLogger(Producer.class);
+    private static final Logger logger = LoggerFactory.getLogger(KafkaProducer.class);
 
     @Value("${cnh.gss.topic.name:users}")
     private String topic;

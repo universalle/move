@@ -1,45 +1,41 @@
 package com.cnhindustrial.telemetry.emulator.rest;
 
-import com.cnhindustrial.telemetry.common.model.TelemetryDto;
 import io.swagger.annotations.ApiOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.BeanFactory;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.util.List;
-import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.stream.IntStream;
 
 @RestController
 public class EmulatorController {
     private static final Logger logger = LoggerFactory.getLogger(EmulatorController.class);
+    private static final int producersNumber = 5;
+    private static final int consumersNumber = 50;
+
+    ExecutorService producerExecutor = Executors.newFixedThreadPool(producersNumber);
+    ExecutorService consumerExecutor = Executors.newFixedThreadPool(consumersNumber);
 
     private final TelemetryMessageService messageService;
 
-    public EmulatorController(TelemetryMessageService messageService) {
+    public EmulatorController(BeanFactory beanFactory, TelemetryMessageService messageService) {
         this.messageService = messageService;
+
+        IntStream.range(0, producersNumber).forEach(value ->
+                producerExecutor.submit(beanFactory.getBean(TelemetryMessageProducer.class))
+        );
+        IntStream.range(0, consumersNumber).forEach(value ->
+                consumerExecutor.submit(beanFactory.getBean(TelemetryMessageConsumer.class))
+        );
     }
 
     @PostMapping("api/v1/emulate")
     @ApiOperation(value = "Emulate telemetry data and send it somewhere")
     public void emulate(int number) {
-
-        Instant start = Instant.now();
-        List<TelemetryDto> telemetryDtoList = messageService.generateTelemetryDtoList(number);
-        Instant end = Instant.now();
-        logger.info("Time to generate messages: " + Duration.between(start, end).toMillis() + " ms");
-
-
-        start = Instant.now();
-        List<Callable<TelemetryTask>> tasks = messageService.createTelemetryTasks(telemetryDtoList);
-        end = Instant.now();
-        logger.info("Time to create callable tasks: " + Duration.between(start, end).toMillis() + " ms");
-
-        start = Instant.now();
-        messageService.executeTelemetryTasks(tasks);
-        end = Instant.now();
-        logger.info("Time to send to kafka: " + Duration.between(start, end).toMillis() + " ms");
+        messageService.setMaxNumberOfMessages(number);
     }
 }
