@@ -2,9 +2,9 @@ geomesa {
   sfts {
     telemetry_status = {
       fields = [
-        { name = time,                      type = Timestamp, default = true, id = true }
-        { name = pos_point,                 type = Point,     default = true, srid = 4326, id = true }
-        { name = asset_id,                  type = String,    index = true, id = true }
+        { name = time,                      type = Timestamp, default = true}
+        { name = pos_point,                 type = Point,     default = true, srid = 4326}
+        { name = asset_id,                  type = String,    index = true}
         { name = pos_pdop,                  type = Integer }
         { name = pos_current,               type = Boolean }
         { name = pos_satcount,              type = Integer }

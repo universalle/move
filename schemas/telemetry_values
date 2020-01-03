@@ -17,7 +17,7 @@ geomesa {
         { name = resolution,      type = Double }
         { name = parameter_type,  type = String }
         { name = tech_type,       type = String }
-        { name = issigned,        type = String }
+        { name = is_signed,       type = String }
         { name = to,              type = String }
         { name = from,            type = String }
         { name = decoded_value,   type = String }
