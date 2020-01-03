@@ -16,6 +16,7 @@ public class ParameterToolBuilder {
 
     static {
         DICTIONARY.put("event.hub.telemetry.endpoint", "EVENT_HUB_TELEMETRY_ENDPOINT");
+        DICTIONARY.put("blob.storage.controller.data", "BLOB_STORAGE_CONTROLLER_DATA");
     }
 
     private ParameterTool parameterTool = ParameterTool.fromMap(Collections.emptyMap());
