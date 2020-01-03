@@ -6,7 +6,7 @@ geomesa {
         { name = pos_point,       type = Point,     default = true, srid = 4326 }
         { name = asset_id,        type = String,    index = true}
         { name = family_code,     type = String }
-        { name = mid,             type = Integer }
+        { name = _id,             type = Integer }
         { name = device_id,       type = String }
         { name = confidential,    type = Boolean }
         { name = translated_value,type = Double }
