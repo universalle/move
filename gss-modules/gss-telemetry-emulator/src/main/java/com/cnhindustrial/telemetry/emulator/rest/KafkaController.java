@@ -12,18 +12,18 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(value = "/api/kafka")
 public class KafkaController {
 
-    private final Producer producer;
+    private final KafkaProducer kafkaProducer;
     private final TelemetryMessageService messageService;
 
     @Autowired
-    KafkaController(Producer producer, TelemetryMessageService messageService) {
-        this.producer = producer;
+    KafkaController(KafkaProducer kafkaProducer, TelemetryMessageService messageService) {
+        this.kafkaProducer = kafkaProducer;
         this.messageService = messageService;
     }
 
     @PostMapping(value = "/publish")
     public void sendMessageToKafkaTopic(@RequestParam("message") String message) {
         final TelemetryDto telemetryDto = messageService.createTelemetryDto(message);
-        this.producer.sendMessage(telemetryDto);
+        this.kafkaProducer.sendMessage(telemetryDto);
     }
 }
