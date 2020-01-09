@@ -17,12 +17,12 @@ public class IngestPipeline {
     private static final Logger LOGGER = LoggerFactory.getLogger(IngestPipeline.class);
 
     private final SourceFunction<TelemetryDto> telemetryDataSource;
-    private final DataStreamSource<String> controllerDataSource;
+    private final DataStreamSource<byte[]> controllerDataSource;
     private final SinkFunction<String> machineDataSink;
     private final SinkFunction<TelemetryDto> deadLetterSink;
 
-    public IngestPipeline(SourceFunction<TelemetryDto> telemetryDataSource,
-                          DataStreamSource<String> controllerDataSource,
+    IngestPipeline(SourceFunction<TelemetryDto> telemetryDataSource,
+                          DataStreamSource<byte[]> controllerDataSource,
                           SinkFunction<String> machineDataSink,
                           SinkFunction<TelemetryDto> deadLetterSink) {
         this.telemetryDataSource = telemetryDataSource;

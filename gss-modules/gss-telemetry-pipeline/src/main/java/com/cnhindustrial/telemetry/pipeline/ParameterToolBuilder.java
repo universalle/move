@@ -12,11 +12,12 @@ import java.util.stream.Collectors;
 
 public class ParameterToolBuilder {
 
-    private static final Map<String, String> DICTIONARY = new HashMap();
+    private static final Map<String, String> DICTIONARY = new HashMap<>();
 
     static {
         DICTIONARY.put("event.hub.telemetry.endpoint", "EVENT_HUB_TELEMETRY_ENDPOINT");
-        DICTIONARY.put("blob.storage.controller.data", "BLOB_STORAGE_CONTROLLER_DATA");
+        DICTIONARY.put("blob.storage.controller.data.path", "BLOB_STORAGE_CONTROLLER_DATA_PATH");
+        DICTIONARY.put("blob.storage.controller.data.interval.ms", "BLOB_STORAGE_CONTROLLER_DATA_INTERVAL");
     }
 
     private ParameterTool parameterTool = ParameterTool.fromMap(Collections.emptyMap());

@@ -8,11 +8,14 @@ import java.io.IOException;
 
 public class BaseDeserializationSchema<T> extends AbstractDeserializationSchema<T> {
 
+    private static final long serialVersionUID = -3952414081189038371L;
+
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private final Class<? extends T> valueType;
 
     public BaseDeserializationSchema(Class<T> valueType) {
+        super(valueType);
         this.valueType = valueType;
     }
 
