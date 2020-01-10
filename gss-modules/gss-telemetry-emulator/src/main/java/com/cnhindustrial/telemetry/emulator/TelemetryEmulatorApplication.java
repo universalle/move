@@ -17,7 +17,7 @@ public class TelemetryEmulatorApplication {
     }
 
     @Bean
-    public LinkedBlockingQueue<TelemetryDto> queue() {
+    public LinkedBlockingQueue<String> queue() {
         return new LinkedBlockingQueue<>();
     }
 }

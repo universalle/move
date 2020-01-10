@@ -20,9 +20,9 @@ public class KafkaProducer {
     private String topic;
 
     @Autowired
-    private KafkaTemplate<String, TelemetryDto> kafkaTemplate;
+    private KafkaTemplate<String, String> kafkaTemplate;
 
-    public void sendMessage(TelemetryDto message) {
+    public void sendMessage(String message) {
         //logger.info("#### -> Producing message -> {}", message);
         this.kafkaTemplate.send(topic, message);
     }

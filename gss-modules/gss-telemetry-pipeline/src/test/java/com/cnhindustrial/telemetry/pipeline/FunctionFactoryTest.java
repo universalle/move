@@ -23,7 +23,7 @@ class FunctionFactoryTest {
     @Test
     void getTelemetryDataSourceKafka() {
         ParameterTool parameters = ParameterTool.fromMap(emptyMap());
-        SourceFunction<TelemetryDto> telemetryDataSource = new FunctionFactory(parameters).getTelemetryDataSource();
+        SourceFunction<String> telemetryDataSource = new FunctionFactory(parameters).getTelemetryDataSource();
 
         assertThat(telemetryDataSource, Matchers.instanceOf(FlinkKafkaConsumer.class));
     }
@@ -32,7 +32,7 @@ class FunctionFactoryTest {
     void getTelemetryDataSourceEventHub() {
         ParameterTool parameters = ParameterTool.fromMap(singletonMap(
                 "event.hub.telemetry.endpoint", "Endpoint=sb://flink-poc.servicebus.windows.net/;;;EntityPath=atqa-test"));
-        SourceFunction<TelemetryDto> telemetryDataSource = new FunctionFactory(parameters).getTelemetryDataSource();
+        SourceFunction<String> telemetryDataSource = new FunctionFactory(parameters).getTelemetryDataSource();
 
         assertThat(telemetryDataSource, Matchers.instanceOf(FlinkKafkaConsumer.class));
     }

@@ -33,7 +33,7 @@ class FunctionFactory {
         this.parameters = parameters;
     }
 
-    SourceFunction<TelemetryDto> getTelemetryDataSource() {
+    SourceFunction<String> getTelemetryDataSource() {
         if (parameters.has("event.hub.telemetry.endpoint")) {
             LOGGER.info("Building Telemetry Data source function connected to Azure Event Hub.");
 
@@ -54,7 +54,9 @@ class FunctionFactory {
      * and read content using {@link FileBytesInputFormat} as byte array.
      */
     DataStreamSource<byte[]> getControllerDataSource(StreamExecutionEnvironment see) {
-        LOGGER.info("Building Controller Data source function connected to Azure Blob Storage.");
+        return null;
+
+        /*LOGGER.info("Building Controller Data source function connected to Azure Blob Storage.");
 
         String filePath = parameters.get("blob.storage.controller.data.path");
         long interval = parameters.has("blob.storage.controller.data.interval.ms")
@@ -81,7 +83,7 @@ class FunctionFactory {
                 .transform("Controller Dto Reader", inputFormat.getProducedType(), reader)
                 .setParallelism(DEFAULT_BLOB_STORAGE_READER_PARALLELISM);
 
-        return new DataStreamSource<>(source);
+        return new DataStreamSource<>(source);*/
     }
 
     SinkFunction<TelemetryDto> getDeadLetterSink() {

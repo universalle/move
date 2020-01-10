@@ -40,14 +40,14 @@ class IngestPipelineTest {
 
     @Test
     void testThreeTelemetryItemsInPipeline() throws Exception {
-        ArrayList<TelemetryDto> inputArray = new ArrayList<>();
-        inputArray.add(createTelemetryDto("1"));
-        inputArray.add(createTelemetryDto("2"));
-        inputArray.add(createTelemetryDto("3"));
+        ArrayList<String> inputArray = new ArrayList<>();
+        inputArray.add("TelemetryDto{vehicleId='1', date=null, value=0}");
+        inputArray.add("TelemetryDto{vehicleId='2', date=null, value=0}");
+        inputArray.add("TelemetryDto{vehicleId='3', date=null, value=0}");
 
 
         IngestPipeline ingestPipeline = new IngestPipeline(
-                new FromElementsFunction<>(new KryoSerializer<>(TelemetryDto.class, see.getConfig()), inputArray),
+                new FromElementsFunction<>(new KryoSerializer<>(String.class, see.getConfig()), inputArray),
                 null,
                 machineDataCollectSink,
                 null);
@@ -60,11 +60,5 @@ class IngestPipelineTest {
                 "TelemetryDto{vehicleId='2', date=null, value=0}",
                 "TelemetryDto{vehicleId='3', date=null, value=0}"
         ));
-    }
-
-    private TelemetryDto createTelemetryDto(String vehicleId) {
-        TelemetryDto result = new TelemetryDto();
-        result.setVehicleId(vehicleId);
-        return result;
     }
 }

@@ -22,4 +22,8 @@ public class BaseDeserializationSchema<T> extends AbstractDeserializationSchema<
     public T deserialize(byte[] source) throws IOException {
         return OBJECT_MAPPER.readValue(source, valueType);
     }
+
+    public T deserialize(String source) throws IOException {
+        return OBJECT_MAPPER.readValue(source, valueType);
+    }
 }

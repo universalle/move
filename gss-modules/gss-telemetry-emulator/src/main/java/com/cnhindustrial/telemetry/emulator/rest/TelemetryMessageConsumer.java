@@ -1,6 +1,5 @@
 package com.cnhindustrial.telemetry.emulator.rest;
 
-import com.cnhindustrial.telemetry.common.model.TelemetryDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Scope;
@@ -12,10 +11,10 @@ import java.util.concurrent.BlockingQueue;
 @Scope("prototype")
 public class TelemetryMessageConsumer implements Runnable {
     private static final Logger logger = LoggerFactory.getLogger(TelemetryMessageConsumer.class);
-    private final BlockingQueue<TelemetryDto> queue;
+    private final BlockingQueue<String> queue;
     private final KafkaProducer kafkaProducer;
 
-    TelemetryMessageConsumer(BlockingQueue<TelemetryDto> queue, KafkaProducer kafkaProducer) {
+    TelemetryMessageConsumer(BlockingQueue<String> queue, KafkaProducer kafkaProducer) {
         this.queue = queue;
         this.kafkaProducer = kafkaProducer;
     }
@@ -31,7 +30,7 @@ public class TelemetryMessageConsumer implements Runnable {
         }
     }
 
-    void consume(TelemetryDto dto) {
-        kafkaProducer.sendMessage(dto);
+    void consume(String message) {
+        kafkaProducer.sendMessage(message);
     }
 }

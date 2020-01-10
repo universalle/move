@@ -2,6 +2,7 @@ package com.cnhindustrial.telemetry.pipeline;
 
 import com.cnhindustrial.telemetry.common.model.TelemetryDto;
 
+import com.cnhindustrial.telemetry.function.DeserializeTelemetryDataFunction;
 import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.streaming.api.datastream.DataStream;
@@ -16,15 +17,15 @@ public class IngestPipeline {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(IngestPipeline.class);
 
-    private final SourceFunction<TelemetryDto> telemetryDataSource;
+    private final SourceFunction<String> telemetryDataSource;
     private final DataStreamSource<byte[]> controllerDataSource;
     private final SinkFunction<String> machineDataSink;
     private final SinkFunction<TelemetryDto> deadLetterSink;
 
-    IngestPipeline(SourceFunction<TelemetryDto> telemetryDataSource,
-                          DataStreamSource<byte[]> controllerDataSource,
-                          SinkFunction<String> machineDataSink,
-                          SinkFunction<TelemetryDto> deadLetterSink) {
+    IngestPipeline(SourceFunction<String> telemetryDataSource,
+                   DataStreamSource<byte[]> controllerDataSource,
+                   SinkFunction<String> machineDataSink,
+                   SinkFunction<TelemetryDto> deadLetterSink) {
         this.telemetryDataSource = telemetryDataSource;
         this.controllerDataSource = controllerDataSource;
         this.machineDataSink = machineDataSink;
@@ -59,9 +60,9 @@ public class IngestPipeline {
 
         DataStream<TelemetryDto> fromEventHub = see
                 .addSource(telemetryDataSource)
-                .name("Messages From Event Hub")
+                .name("Telemetry messages From Event Hub")
                 .uid("message-source")
-                .returns(TelemetryDto.class)
+                .map(new DeserializeTelemetryDataFunction())
                 .rebalance();
 
         DataStream<String> mappedStream = fromEventHub
