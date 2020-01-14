@@ -1,5 +1,6 @@
 package com.cnhindustrial.telemetry.pipeline;
 
+import com.cnhindustrial.telemetry.GeomesaFeature;
 import com.cnhindustrial.telemetry.common.model.ControllerDto;
 import com.cnhindustrial.telemetry.function.DeserializeControllerDataFunction;
 
@@ -20,9 +21,9 @@ public class ControllerDataPipeline {
     private static final Logger LOGGER = LoggerFactory.getLogger(ControllerDataPipeline.class);
 
     private final DataStreamSource<byte[]> controllerDataSource;
-    private final SinkFunction<String> controllerDataSink;
+    private final SinkFunction<GeomesaFeature> controllerDataSink;
 
-    ControllerDataPipeline(DataStreamSource<byte[]> controllerDataSource, SinkFunction<String> controllerDataSink) {
+    ControllerDataPipeline(DataStreamSource<byte[]> controllerDataSource, SinkFunction<GeomesaFeature> controllerDataSink) {
         this.controllerDataSource = controllerDataSource;
         this.controllerDataSink = controllerDataSink;
     }
@@ -52,13 +53,14 @@ public class ControllerDataPipeline {
                 .map(new DeserializeControllerDataFunction())
                 .name("Deserialize Controller Data");
 
-        DataStream<String> stringDataStream = controllerDataStream
+        // TODO: temporarily commented out
+        /*DataStream<String> stringDataStream = controllerDataStream
                 .map(ControllerDto::toString)
                 .name("Controller Dto to String");
 
         stringDataStream
                 .addSink(controllerDataSink)
-                .name("Std Out");
+                .name("Std Out");*/
     }
 
     void execute(StreamExecutionEnvironment see) throws Exception {

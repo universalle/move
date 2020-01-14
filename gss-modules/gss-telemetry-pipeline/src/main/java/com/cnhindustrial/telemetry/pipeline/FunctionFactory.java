@@ -1,5 +1,7 @@
 package com.cnhindustrial.telemetry.pipeline;
 
+import com.cnhindustrial.telemetry.GeoMesaBufferedSink;
+import com.cnhindustrial.telemetry.GeomesaFeature;
 import com.cnhindustrial.telemetry.common.json.FileBytesInputFormat;
 import com.cnhindustrial.telemetry.common.model.TelemetryDto;
 
@@ -56,6 +58,8 @@ class FunctionFactory {
     DataStreamSource<byte[]> getControllerDataSource(StreamExecutionEnvironment see) {
         return null;
 
+        // TODO: temporarily commented out
+
         /*LOGGER.info("Building Controller Data source function connected to Azure Blob Storage.");
 
         String filePath = parameters.get("blob.storage.controller.data.path");
@@ -92,9 +96,8 @@ class FunctionFactory {
         return new PrintSinkFunction<>();
     }
 
-    SinkFunction<String> getMachineDataSink() {
+    SinkFunction<GeomesaFeature> getMachineDataSink() {
         LOGGER.info("Building Machine Data sink function connected to Geomesa.");
-        // TODO add real implementation
-        return new PrintSinkFunction<>();
+        return new GeoMesaBufferedSink();
     }
 }

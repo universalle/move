@@ -1,5 +1,6 @@
 package com.cnhindustrial.telemetry.pipeline;
 
+import com.cnhindustrial.telemetry.GeomesaFeature;
 import com.cnhindustrial.telemetry.common.model.TelemetryDto;
 
 import org.apache.flink.api.java.utils.ParameterTool;
@@ -59,7 +60,7 @@ class FunctionFactoryTest {
 
     @Test
     void getMachineDataSink() {
-        SinkFunction<String> machineDataSink =
+        SinkFunction<GeomesaFeature> machineDataSink =
                 new FunctionFactory(ParameterTool.fromMap(emptyMap())).getMachineDataSink();
         assertThat(machineDataSink, Matchers.instanceOf(PrintSinkFunction.class));
     }

@@ -8,4 +8,8 @@ public class EnvironmentConfigurationException extends RuntimeException {
     public EnvironmentConfigurationException(String message) {
         super(message);
     }
+
+    public EnvironmentConfigurationException(String message, Exception e) {
+        super(message, e);
+    }
 }

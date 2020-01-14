@@ -1,6 +1,5 @@
 package com.cnhindustrial.telemetry.pipeline;
 
-import com.cnhindustrial.telemetry.common.model.TelemetryDto;
 import com.cnhindustrial.telemetry.test.MachineDataCollectSink;
 import com.cnhindustrial.telemetry.test.MiniClusterWithClientResourceExtension;
 

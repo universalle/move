@@ -1,7 +1,7 @@
 package com.cnhindustrial.telemetry.test;
 
+import com.cnhindustrial.telemetry.GeomesaFeature;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
-import org.apache.kafka.common.protocol.types.Field.Str;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -10,8 +10,7 @@ import java.util.List;
 /**
  * Testing sink.
  */
-// TODO temporary the generic type is String
-public class MachineDataCollectSink implements SinkFunction<String> {
+public class MachineDataCollectSink implements SinkFunction<GeomesaFeature> {
 
     private static final long serialVersionUID = 428694870703857546L;
 
@@ -19,14 +18,14 @@ public class MachineDataCollectSink implements SinkFunction<String> {
      * must be static
      * https://ci.apache.org/projects/flink/flink-docs-stable/dev/stream/testing.html#junit-rule-miniclusterwithclientresource
      */
-    private static final List<String> values = new ArrayList<>();
+    private static final List<GeomesaFeature> values = new ArrayList<>();
 
     @Override
-    public synchronized void invoke(String value, Context context) throws Exception {
+    public synchronized void invoke(GeomesaFeature value, Context context) throws Exception {
         values.add(value);
     }
 
-    public List<String> getValues() {
+    public List<GeomesaFeature> getValues() {
         return Collections.unmodifiableList(values);
     }
 
