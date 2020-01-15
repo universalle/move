@@ -1,6 +1,7 @@
 package com.cnhindustrial.telemetry.pipeline;
 
 import com.cnhindustrial.telemetry.common.exception.EnvironmentConfigurationException;
+import com.cnhindustrial.telemetry.common.json.ByteArrayDeserializationSchema;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.api.common.serialization.DeserializationSchema;
@@ -45,8 +46,8 @@ public class KafkaConnector {
                 properties);
     }
 
-    public FlinkKafkaConsumer<String> telemetrySource() {
-        return kafkaSource(new TelemetryDeserializationSchema());
+    public FlinkKafkaConsumer<byte[]> messageSource() {
+        return kafkaSource(new ByteArrayDeserializationSchema());
     }
 
 //    private <T> FlinkKafkaProducer<T> kafkaSink(SerializationSchema<T> deserializationSchema) {

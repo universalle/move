@@ -1,9 +1,5 @@
 package com.cnhindustrial.telemetry.pipeline;
 
-import com.cnhindustrial.telemetry.GeomesaFeature;
-import com.cnhindustrial.telemetry.common.model.ControllerDto;
-import com.cnhindustrial.telemetry.function.DeserializeControllerDataFunction;
-
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
@@ -21,9 +17,9 @@ public class ControllerDataPipeline {
     private static final Logger LOGGER = LoggerFactory.getLogger(ControllerDataPipeline.class);
 
     private final DataStreamSource<byte[]> controllerDataSource;
-    private final SinkFunction<GeomesaFeature> controllerDataSink;
+    private final SinkFunction<String> controllerDataSink;
 
-    ControllerDataPipeline(DataStreamSource<byte[]> controllerDataSource, SinkFunction<GeomesaFeature> controllerDataSink) {
+    ControllerDataPipeline(DataStreamSource<byte[]> controllerDataSource, SinkFunction<String> controllerDataSink) {
         this.controllerDataSource = controllerDataSource;
         this.controllerDataSink = controllerDataSink;
     }
@@ -49,18 +45,17 @@ public class ControllerDataPipeline {
         DataStream<byte[]> sourceStream = controllerDataSource
                 .name("Bytes from Files");
 
-        DataStream<ControllerDto> controllerDataStream = sourceStream
-                .map(new DeserializeControllerDataFunction())
-                .name("Deserialize Controller Data");
+//        DataStream<ControllerDto> controllerDataStream = sourceStream
+//                .map(new DeserializeControllerDataFunction())
+//                .name("Deserialize Controller Data");
 
-        // TODO: temporarily commented out
-        /*DataStream<String> stringDataStream = controllerDataStream
-                .map(ControllerDto::toString)
+        DataStream<String> stringDataStream = sourceStream
+                .map(String::new)
                 .name("Controller Dto to String");
 
         stringDataStream
                 .addSink(controllerDataSink)
-                .name("Std Out");*/
+                .name("Std Out");
     }
 
     void execute(StreamExecutionEnvironment see) throws Exception {

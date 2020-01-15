@@ -1,110 +1,155 @@
 package com.cnhindustrial.telemetry.common.model;
 
-public class Position {
-    private int pdop;
-    private boolean current;
-    private int satcount;
-    private int fixtype;
-    private float alt;
-    private double lon;
-    private String time;
+import java.io.Serializable;
+import java.util.Date;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public class Position implements Serializable {
+
+    private static final long serialVersionUID = 1089419898767138854L;
+
+    @JsonProperty("time")
+    private Date time;
+    @JsonProperty("lat")
     private double lat;
+    @JsonProperty("lon")
+    private double lon;
+    @JsonProperty("alt")
+    private double alt;
+    @JsonProperty("direction")
+    private double direction;
+    @JsonProperty("speed")
     private int speed;
-    private float direction;
+    @JsonProperty("fixtype")
+    private int fixtype;
+    @JsonProperty("pdop")
+    private double pdop;
+    @JsonProperty("satcount")
+    private int satcount;
+    @JsonProperty("current")
+    private boolean current;
 
-    public int getPdop() {
-        return pdop;
-    }
-
-    public void setPdop(int pdop) {
-        this.pdop = pdop;
-    }
-
-    public boolean isCurrent() {
-        return current;
-    }
-
-    public void setCurrent(boolean current) {
-        this.current = current;
-    }
-
-    public int getSatcount() {
-        return satcount;
-    }
-
-    public void setSatcount(int satcount) {
-        this.satcount = satcount;
-    }
-
-    public int getFixtype() {
-        return fixtype;
-    }
-
-    public void setFixtype(int fixtype) {
-        this.fixtype = fixtype;
-    }
-
-    public float getAlt() {
-        return alt;
-    }
-
-    public void setAlt(float alt) {
-        this.alt = alt;
-    }
-
-    public double getLon() {
-        return lon;
-    }
-
-    public void setLon(double lon) {
-        this.lon = lon;
-    }
-
-    public String getTime() {
+    @JsonProperty("time")
+    public Date getTime() {
         return time;
     }
 
-    public void setTime(String time) {
+    @JsonProperty("time")
+    public void setTime(Date time) {
         this.time = time;
     }
 
+    @JsonProperty("lat")
     public double getLat() {
         return lat;
     }
 
+    @JsonProperty("lat")
     public void setLat(double lat) {
         this.lat = lat;
     }
 
+    @JsonProperty("lon")
+    public double getLon() {
+        return lon;
+    }
+
+    @JsonProperty("lon")
+    public void setLon(double lon) {
+        this.lon = lon;
+    }
+
+    @JsonProperty("alt")
+    public double getAlt() {
+        return alt;
+    }
+
+    @JsonProperty("alt")
+    public void setAlt(double alt) {
+        this.alt = alt;
+    }
+
+    @JsonProperty("direction")
+    public double getDirection() {
+        return direction;
+    }
+
+    @JsonProperty("direction")
+    public void setDirection(double direction) {
+        this.direction = direction;
+    }
+
+    @JsonProperty("speed")
     public int getSpeed() {
         return speed;
     }
 
+    @JsonProperty("speed")
     public void setSpeed(int speed) {
         this.speed = speed;
     }
 
-    public float getDirection() {
-        return direction;
+    @JsonProperty("fixtype")
+    public int getFixtype() {
+        return fixtype;
     }
 
-    public void setDirection(float direction) {
-        this.direction = direction;
+    @JsonProperty("fixtype")
+    public void setFixtype(int fixtype) {
+        this.fixtype = fixtype;
+    }
+
+    @JsonProperty("pdop")
+    public double getPdop() {
+        return pdop;
+    }
+
+    @JsonProperty("pdop")
+    public void setPdop(double pdop) {
+        this.pdop = pdop;
+    }
+
+    @JsonProperty("satcount")
+    public int getSatcount() {
+        return satcount;
+    }
+
+    @JsonProperty("satcount")
+    public void setSatcount(int satcount) {
+        this.satcount = satcount;
+    }
+
+    @JsonProperty("current")
+    public boolean isCurrent() {
+        return current;
+    }
+
+    @JsonProperty("current")
+    public void setCurrent(boolean current) {
+        this.current = current;
     }
 
     @Override
-    public String toString() {
-        return "Position{" +
-                "pdop=" + pdop +
-                ", current=" + current +
-                ", satcount=" + satcount +
-                ", fixtype=" + fixtype +
-                ", alt=" + alt +
-                ", lon=" + lon +
-                ", time='" + time + '\'' +
-                ", lat=" + lat +
-                ", speed=" + speed +
-                ", direction=" + direction +
-                '}';
+    public int hashCode() {
+        return new HashCodeBuilder().append(pdop).append(current).append(satcount).append(fixtype).append(alt).append(lon).append(time).append(lat).append(speed).append(direction).toHashCode();
     }
+
+    @Override
+    public boolean equals(Object other) {
+        if (other == this) {
+            return true;
+        }
+        if (!(other instanceof Position)) {
+            return false;
+        }
+        Position rhs = ((Position) other);
+        return new EqualsBuilder().append(pdop, rhs.pdop).append(current, rhs.current).append(satcount, rhs.satcount).append(fixtype, rhs.fixtype).append(alt, rhs.alt).append(lon, rhs.lon).append(time, rhs.time).append(lat, rhs.lat).append(speed, rhs.speed).append(direction, rhs.direction).isEquals();
+    }
+
 }

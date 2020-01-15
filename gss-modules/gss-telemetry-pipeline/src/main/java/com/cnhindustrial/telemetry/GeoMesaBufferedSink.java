@@ -31,7 +31,10 @@ import java.util.Map;
 
 public class GeoMesaBufferedSink extends RichSinkFunction<GeomesaFeature> implements CheckpointedFunction, ProcessingTimeCallback, Serializable {
 
+    private static final long serialVersionUID = -667478325867719765L;
+
     private static final Logger LOGGER = LoggerFactory.getLogger(GeoMesaBufferedSink.class);
+
     private static GeoMesaCassandraDataStoreFactory dataStoreFactory = new GeoMesaCassandraDataStoreFactory();
 
     //Flink Counter

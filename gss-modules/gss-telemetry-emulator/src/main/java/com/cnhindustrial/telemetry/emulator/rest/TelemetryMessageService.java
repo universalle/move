@@ -26,6 +26,7 @@ public class TelemetryMessageService {
     }
 
     public void setMaxNumberOfMessages(int maxNumberOfMessages) {
+        logger.info("Setting max number of messages per second to {}.", maxNumberOfMessages);
         this.maxNumberOfMessages = maxNumberOfMessages;
     }
 
@@ -35,7 +36,7 @@ public class TelemetryMessageService {
 
     @Scheduled(fixedRate = 1000)
     public void resetCounter() {
-        logger.info("Messages in queue: " + queue.size());
+//        logger.info("Messages in queue: " + queue.size());
         counter.set(0);
     }
 }

@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 public class TelemetryRecordMessageBuilder extends MessageBuilder {
 
     private final String telemetryRecordTemplate = "{" +
+            "  \"messageType\":\"Telemetry\"," +
             "  \"id\": 757," +
             "  \"offset\": 0," +
             "  \"resolution\": 1," +

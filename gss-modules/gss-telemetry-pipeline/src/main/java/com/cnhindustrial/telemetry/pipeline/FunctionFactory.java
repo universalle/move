@@ -35,19 +35,22 @@ class FunctionFactory {
         this.parameters = parameters;
     }
 
-    SourceFunction<String> getTelemetryDataSource() {
+    SourceFunction<byte[]> getTelemetryDataSource() {
         if (parameters.has("event.hub.telemetry.endpoint")) {
             LOGGER.info("Building Telemetry Data source function connected to Azure Event Hub.");
 
+            String connectionString = parameters.get("event.hub.telemetry.endpoint");
+            LOGGER.debug("Azure Event Hub connection string: {}.", connectionString);
+
             return new KafkaConnector.Builder()
-                    .buildEventHubConnector(parameters.get("event.hub.telemetry.endpoint"))
-                    .telemetrySource();
+                    .buildEventHubConnector(connectionString)
+                    .messageSource();
         } else {
             LOGGER.info("Building Telemetry Data source function connected to local Kafka.");
 
             return new KafkaConnector.Builder()
                     .buildKafkaConnector("users", "localhost:29092")
-                    .telemetrySource();
+                    .messageSource();
         }
     }
 
@@ -56,11 +59,7 @@ class FunctionFactory {
      * and read content using {@link FileBytesInputFormat} as byte array.
      */
     DataStreamSource<byte[]> getControllerDataSource(StreamExecutionEnvironment see) {
-        return null;
-
-        // TODO: temporarily commented out
-
-        /*LOGGER.info("Building Controller Data source function connected to Azure Blob Storage.");
+        LOGGER.info("Building Controller Data source function connected to Azure Blob Storage.");
 
         String filePath = parameters.get("blob.storage.controller.data.path");
         long interval = parameters.has("blob.storage.controller.data.interval.ms")
@@ -69,6 +68,9 @@ class FunctionFactory {
         FileProcessingMode watchType = parameters.has("environment.test")
                 ? FileProcessingMode.PROCESS_ONCE
                 : FileProcessingMode.PROCESS_CONTINUOUSLY;
+
+        LOGGER.debug("Azure Blob Storage path: {}, monitoring interval: {} ms, watch type: {}.",
+                filePath, interval, watchType);
 
         FileBytesInputFormat inputFormat = new FileBytesInputFormat();
         inputFormat.setFilePath(filePath);
@@ -87,7 +89,7 @@ class FunctionFactory {
                 .transform("Controller Dto Reader", inputFormat.getProducedType(), reader)
                 .setParallelism(DEFAULT_BLOB_STORAGE_READER_PARALLELISM);
 
-        return new DataStreamSource<>(source);*/
+        return new DataStreamSource<>(source);
     }
 
     SinkFunction<TelemetryDto> getDeadLetterSink() {

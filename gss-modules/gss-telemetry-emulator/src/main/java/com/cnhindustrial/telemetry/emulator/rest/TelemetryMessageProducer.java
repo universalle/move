@@ -99,16 +99,16 @@ public class TelemetryMessageProducer implements Runnable {
     }
 
     private String getTime() {
-        return LocalDateTime.now().minusSeconds(1).format(dateTimeFormat);
+        return LocalDateTime.now().minusSeconds(1).format(DATE_TIME_FORMATTER);
     }
 
     private void setInvalidParam(Map<String, Object> inputParams) {
         switch (InvalidMessageType.values()[random.nextInt(InvalidMessageType.values().length)]) {
             case TIMESTAMP_AFTER:
-                inputParams.put("time", LocalDateTime.now().plusMonths(1).format(dateTimeFormat));
+                inputParams.put("time", LocalDateTime.now().plusMonths(1).format(DATE_TIME_FORMATTER));
                 break;
             case TIMESTAMP_BEFORE:
-                inputParams.put("time", LocalDateTime.now().minusYears(25).format(dateTimeFormat));
+                inputParams.put("time", LocalDateTime.now().minusYears(25).format(DATE_TIME_FORMATTER));
                 break;
             case INVALID_LATITUDE:
                 inputParams.put("lat", -1);
@@ -120,7 +120,7 @@ public class TelemetryMessageProducer implements Runnable {
                 inputParams.put("assetId", "INVALID_ASSET_ID");
                 break;
             case INVALID_TIME_FORMAT:
-                LocalDateTime.now().minusSeconds(1).format(ISO_LOCAL_DATE);
+//                inputParams.put("time", LocalDateTime.now().minusSeconds(1).format(ISO_LOCAL_DATE));
                 break;
         }
     }

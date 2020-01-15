@@ -1,33 +1,52 @@
 package com.cnhindustrial.telemetry.pipeline;
 
+import com.cnhindustrial.telemetry.function.ReadLinesSourceFunction;
 import com.cnhindustrial.telemetry.test.MachineDataCollectSink;
 import com.cnhindustrial.telemetry.test.MiniClusterWithClientResourceExtension;
+import com.twitter.chill.java.UnmodifiableMapSerializer;
 
-import org.apache.flink.api.java.typeutils.runtime.kryo.KryoSerializer;
+import de.javakaffee.kryoserializers.UnmodifiableCollectionsSerializer;
+
+import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.api.functions.source.FromElementsFunction;
+import org.apache.flink.streaming.api.functions.source.SourceFunction;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 
 @ExtendWith(MiniClusterWithClientResourceExtension.class)
 class IngestPipelineTest {
 
     private StreamExecutionEnvironment see;
     private MachineDataCollectSink machineDataCollectSink;
+    private FunctionFactory functionFactory;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws ClassNotFoundException {
         see = StreamExecutionEnvironment.getExecutionEnvironment();
+
+        Class<?> unmodColl = Class.forName("java.util.Collections$UnmodifiableCollection");
+        see.getConfig().addDefaultKryoSerializer(unmodColl, UnmodifiableCollectionsSerializer.class);
+        Class<?> unmodMap = Class.forName("java.util.Collections$UnmodifiableMap");
+        see.getConfig().addDefaultKryoSerializer(unmodMap, UnmodifiableMapSerializer.class);
 
         // configure your test environment
         see.setParallelism(2);
+
+        Map<String, String> map = new HashMap<>();
+        map.put("blob.storage.controller.data.path", "src/test/resources/com/cnhindustrial/telemetry/data/controller");
+        map.put("environment.test", "true");
+        ParameterTool parameters = ParameterTool
+                .fromMap(map);
+        functionFactory = new FunctionFactory(parameters);
 
         machineDataCollectSink = new MachineDataCollectSink();
     }
@@ -45,8 +64,10 @@ class IngestPipelineTest {
         inputArray.add("TelemetryDto{vehicleId='3', date=null, value=0}");
 
 
+        SourceFunction<byte[]> readlines = new ReadLinesSourceFunction(
+                "src/test/resources/com/cnhindustrial/telemetry/data/telemetry/messages.txt");
         IngestPipeline ingestPipeline = new IngestPipeline(
-                new FromElementsFunction<>(new KryoSerializer<>(String.class, see.getConfig()), inputArray),
+                readlines,
                 null,
                 machineDataCollectSink,
                 null);
@@ -54,10 +75,6 @@ class IngestPipelineTest {
         ingestPipeline.build(see);
         ingestPipeline.execute(see);
 
-        assertThat(machineDataCollectSink.getValues(), containsInAnyOrder(
-                "TelemetryDto{vehicleId='1', date=null, value=0}",
-                "TelemetryDto{vehicleId='2', date=null, value=0}",
-                "TelemetryDto{vehicleId='3', date=null, value=0}"
-        ));
+        assertThat(machineDataCollectSink.getValues().size(), Matchers.is(12));
     }
 }

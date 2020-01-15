@@ -1,6 +1,11 @@
 package com.cnhindustrial.telemetry.common.model;
 
-public class NetworkInfo {
+import java.io.Serializable;
+
+public class NetworkInfo implements Serializable {
+
+    private static final long serialVersionUID = 5076661872706723790L;
+
     private int rssi;
     private int mnc;
     private String networkStatus;

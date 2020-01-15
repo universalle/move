@@ -15,6 +15,8 @@ import java.io.Serializable;
  */
 public class GeomesaFeature extends SimpleFeatureImpl implements Serializable {
 
+    private static final long serialVersionUID = 7094069468996697390L;
+
     private static FilterFactory2 FILTER_FACTORY = CommonFactoryFinder.getFilterFactory2(null);
     private static boolean DEFAULT_VALIDATION_STATE = false;
 

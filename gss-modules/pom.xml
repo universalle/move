@@ -30,9 +30,24 @@
 
     <repositories>
         <repository>
-            <id>nexus</id>
-            <name>nexus.geomatys.com</name>
-            <url>https://nexus.geomatys.com/</url>
+            <id>osgeo</id>
+            <name>osgeo</name>
+            <url>http://download.osgeo.org/webdav/geotools</url>
+        </repository>
+        <repository>
+            <id>locationtech</id>
+            <name>locationtech</name>
+            <url>https://repo.locationtech.org/content/repositories/releases</url>
+        </repository>
+        <repository>
+            <id>boundlessgeo</id>
+            <name>boundlessgeo</name>
+            <url>http://repo.boundlessgeo.com/main</url>
+        </repository>
+        <repository>
+            <id>geomajas</id>
+            <name>geomajas</name>
+            <url>http://maven.geomajas.org/</url>
         </repository>
     </repositories>
 
