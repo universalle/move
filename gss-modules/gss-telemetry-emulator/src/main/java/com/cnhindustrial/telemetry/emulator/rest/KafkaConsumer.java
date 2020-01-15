@@ -6,10 +6,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-@Service
-public class Consumer {
+//@Service
+public class KafkaConsumer {
 
-    private final Logger logger = LoggerFactory.getLogger(Consumer.class);
+    private final Logger logger = LoggerFactory.getLogger(KafkaConsumer.class);
 
 //    @KafkaListener(topics = "users", groupId = "group_id")
     public void consume(TelemetryDto message) {
