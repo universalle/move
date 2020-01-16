@@ -1,19 +1,27 @@
 package com.cnhindustrial.telemetry.pipeline;
 
 import com.cnhindustrial.telemetry.GeomesaFeature;
+import com.cnhindustrial.telemetry.common.model.ControllerDto;
 import com.cnhindustrial.telemetry.common.model.TelemetryDto;
+import com.cnhindustrial.telemetry.converter.GeomesaControllerFeatureConverter;
 import com.cnhindustrial.telemetry.converter.GeomesaFeatureConverter;
 import com.cnhindustrial.telemetry.function.DeserializeMapFunction;
+import com.cnhindustrial.telemetry.function.SideOutputProcessFunction;
+import com.cnhindustrial.telemetry.function.TelemetryDtoConverter;
 import com.twitter.chill.java.UnmodifiableMapSerializer;
 
 import de.javakaffee.kryoserializers.UnmodifiableCollectionsSerializer;
 
+import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
+import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.functions.sink.PrintSinkFunction;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.flink.streaming.api.functions.source.SourceFunction;
+import org.apache.flink.util.OutputTag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,8 +63,8 @@ public class IngestPipeline {
 
         IngestPipeline ingestPipeline = new IngestPipeline(
                 functionFactory.getTelemetryDataSource(),
-                null, //functionFactory.getControllerDataSource(see),
-                functionFactory.getMachineDataSink(),
+                functionFactory.getControllerDataSource(see),
+                new PrintSinkFunction<>(), // TODO functionFactory.getMachineDataSink(),
                 functionFactory.getDeadLetterSink());
 
         ingestPipeline.build(see);
@@ -71,25 +79,58 @@ public class IngestPipeline {
 
         DataStream<byte[]> rawMessageStream = see
                 .addSource(telemetryDataSource)
-                .name("Messages From Event Hub")
-                .uid("message-source")
-                .rebalance();
+                .name("Message From Event Hub")
+                .uid("eventhub-source");
 
-        DataStream<TelemetryDto> telemetryStream = rawMessageStream
+        DataStream<byte[]> rawControllerStream = controllerDataSource
+                .name("Message from Blob Storage")
+                .uid("blob-storage-source");
+
+        OutputTag<TelemetryDto> outputTag = new OutputTag<>("telemetry-cache", TypeInformation.of(TelemetryDto.class));
+
+        SingleOutputStreamOperator<TelemetryDto> flattenTelemetryStream = rawMessageStream
                 .map(new DeserializeMapFunction<>(TelemetryDto.class))
-                .name("Deserialize Telemetry Value")
-                .uid("deserialize-telemetry-value")
-                .rebalance();
+                .name("Deserialize Telemetry")
+                .uid("deserialize-telemetry")
 
-        DataStream<GeomesaFeature> featuresStream = telemetryStream
+                .process(new SideOutputProcessFunction<>(outputTag, new TelemetryDtoConverter(), TelemetryDto.class))
+                .name("Telemetry Side Output")
+                .uid("telemetry-side-output");
+
+        SingleOutputStreamOperator<ControllerDto> controllerStream = rawControllerStream
+                .map(new DeserializeMapFunction<>(ControllerDto.class))
+                .name("Deserialize Controller Data")
+                .uid("deserialize-controller");
+
+//        StreamTableSource<FlattenTelemetryDto> telemetryTableSource = new FlattenTelemetryTableSource(flattenTelemetryStream);
+//        StreamTableSource<ControllerDto> controllerTableSource = new ControllerTableSource(controllerStream);
+
+//        StreamTableEnvironment ste = StreamTableEnvironment.create(see);
+
+//        Table telemetryTable = ste.fromDataStream(flattenTelemetryStream, "deviceid, assetId");
+//        Table controllerTable = ste.fromDataStream(controllerStream, "id, description");
+
+//        Table mergedTable = controllerTable.join(telemetryTable, "id = assetId"); // TODO the join condition is wrong
+
+//        DataStream<ControllerDto> controllerMergeStream = ste.toAppendStream(mergedTable, ControllerDto.class);
+
+        DataStream<GeomesaFeature> telemetryFeatureStream = flattenTelemetryStream.getSideOutput(outputTag)
                 .map(new GeomesaFeatureConverter())
-                .name("Feature converter")
-                .uid("feature-converter")
-                .rebalance();
+                .name("Telemetry Feature converter")
+                .uid("telemetry-feature-converter");
 
-        featuresStream.addSink(machineDataSink)
+        telemetryFeatureStream.addSink(machineDataSink)
                 .name("Sink Telemetry data to Buffered List")
-                .uid("geomesa-sink");
+                .uid("telemetry-geomesa-sink");
+
+        DataStream<GeomesaFeature> controllerFeatureStream = controllerStream
+                .map(new GeomesaControllerFeatureConverter())
+                .name("Controller Feature converter")
+                .uid("controller-feature-converter");
+
+        controllerFeatureStream.addSink(new PrintSinkFunction<>())
+                .name("Sink Controller data to Buffered List")
+                .uid("controller-geomesa-sink");
     }
 
     /**

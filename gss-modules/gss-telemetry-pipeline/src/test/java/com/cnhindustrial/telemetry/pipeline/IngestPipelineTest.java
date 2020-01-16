@@ -28,6 +28,7 @@ class IngestPipelineTest {
     private StreamExecutionEnvironment see;
     private MachineDataCollectSink machineDataCollectSink;
     private FunctionFactory functionFactory;
+    private SourceFunction<byte[]> telemetrySource;
 
     @BeforeEach
     void setUp() throws ClassNotFoundException {
@@ -48,6 +49,9 @@ class IngestPipelineTest {
                 .fromMap(map);
         functionFactory = new FunctionFactory(parameters);
 
+        telemetrySource = new ReadLinesSourceFunction(
+                "src/test/resources/com/cnhindustrial/telemetry/data/telemetry/messages.txt");
+
         machineDataCollectSink = new MachineDataCollectSink();
     }
 
@@ -58,17 +62,9 @@ class IngestPipelineTest {
 
     @Test
     void testThreeTelemetryItemsInPipeline() throws Exception {
-        ArrayList<String> inputArray = new ArrayList<>();
-        inputArray.add("TelemetryDto{vehicleId='1', date=null, value=0}");
-        inputArray.add("TelemetryDto{vehicleId='2', date=null, value=0}");
-        inputArray.add("TelemetryDto{vehicleId='3', date=null, value=0}");
-
-
-        SourceFunction<byte[]> readlines = new ReadLinesSourceFunction(
-                "src/test/resources/com/cnhindustrial/telemetry/data/telemetry/messages.txt");
         IngestPipeline ingestPipeline = new IngestPipeline(
-                readlines,
-                null,
+                telemetrySource,
+                functionFactory.getControllerDataSource(see),
                 machineDataCollectSink,
                 null);
 
