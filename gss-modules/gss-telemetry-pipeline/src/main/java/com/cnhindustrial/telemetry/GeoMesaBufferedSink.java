@@ -1,6 +1,9 @@
 package com.cnhindustrial.telemetry;
 
 import com.cnhindustrial.telemetry.factory.GeoMesaCassandraDataStoreFactory;
+import com.cnhindustrial.telemetry.model.TelemetryFeatureWrapper;
+import com.cnhindustrial.telemetry.model.TelemetryStatusSimpleFeatureTypeBuilder;
+import com.cnhindustrial.telemetry.model.TelemetryValueSimpleFeatureTypeBuilder;
 import org.apache.flink.api.common.state.ListState;
 import org.apache.flink.api.common.state.ListStateDescriptor;
 import org.apache.flink.api.java.typeutils.runtime.kryo.KryoSerializer;
@@ -24,12 +27,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
-public class GeoMesaBufferedSink extends RichSinkFunction<GeomesaFeature> implements CheckpointedFunction, ProcessingTimeCallback, Serializable {
+public class GeoMesaBufferedSink extends RichSinkFunction<TelemetryFeatureWrapper> implements CheckpointedFunction, ProcessingTimeCallback, Serializable {
 
     private static final long serialVersionUID = -667478325867719765L;
 
@@ -40,20 +41,20 @@ public class GeoMesaBufferedSink extends RichSinkFunction<GeomesaFeature> implem
     //Flink Counter
     private transient Counter counter;
 
-    //Geomesa Data Store used for getting GeoMesaFeatureStore
-    private transient DataStore datastore;
+    //Used for saving telemetry status features to DB
+    private transient GeoMesaFeatureStore statusFeatureStore;
 
-    //Used for saving features to DB
-    private transient GeoMesaFeatureStore featureStore;
+    //Used for saving telemetry value features to DB
+    private transient GeoMesaFeatureStore valueFeatureStore;
 
     //Used as Timer for sending partial messages
     private transient ProcessingTimeService processingTimeService;
 
     //Here is our batch with messages
-    private List<SimpleFeature> bufferedMessages;
+    private List<TelemetryFeatureWrapper> bufferedMessages;
 
     //List for saving state, as described in Flink documentation
-    private transient ListState<SimpleFeature> checkpointedState;
+    private transient ListState<TelemetryFeatureWrapper> checkpointedState;
 
     //Time in millis for timer, triggered every 30 minutes
     private static final int INACTIVE_BUCKET_CHECK_INTERVAL = 30 * 60 * 1000;
@@ -61,7 +62,7 @@ public class GeoMesaBufferedSink extends RichSinkFunction<GeomesaFeature> implem
     //How messages is stored in batch,
     //Mind that each parallel execution
     //has it own batch with this THRESHOLD
-    private static final int GENERAL_THRESHOLD = 10000;
+    private static final int GENERAL_THRESHOLD = 100;
 
     private int thresholdPerParallelSubtag;
 
@@ -70,10 +71,10 @@ public class GeoMesaBufferedSink extends RichSinkFunction<GeomesaFeature> implem
     }
 
     @Override
-    public void invoke(GeomesaFeature value, Context context) {
+    public void invoke(TelemetryFeatureWrapper value, Context context) {
         this.bufferedMessages.add(value);
         this.counter.inc();
-        if(this.bufferedMessages.size() >= thresholdPerParallelSubtag){
+        if (this.bufferedMessages.size() >= thresholdPerParallelSubtag) {
             storeMessageToGeomesa();
             this.bufferedMessages.clear();
         }
@@ -93,11 +94,11 @@ public class GeoMesaBufferedSink extends RichSinkFunction<GeomesaFeature> implem
      */
     @Override
     public void initializeState(FunctionInitializationContext context) throws Exception {
-        KryoSerializer serializer = new KryoSerializer(GeomesaFeature.class, getRuntimeContext().getExecutionConfig());
-        ListStateDescriptor<SimpleFeature> descriptor = new ListStateDescriptor<SimpleFeature>("buffered-elements", serializer);
+        KryoSerializer serializer = new KryoSerializer<>(TelemetryFeatureWrapper.class, getRuntimeContext().getExecutionConfig());
+        ListStateDescriptor<TelemetryFeatureWrapper> descriptor = new ListStateDescriptor<TelemetryFeatureWrapper>("buffered-elements", serializer);
         this.checkpointedState = context.getOperatorStateStore().getListState(descriptor);
         if (context.isRestored()) {
-            for (SimpleFeature element : this.checkpointedState.get()) {
+            for (TelemetryFeatureWrapper element : this.checkpointedState.get()) {
                 this.bufferedMessages.add(element);
             }
         }
@@ -125,12 +126,18 @@ public class GeoMesaBufferedSink extends RichSinkFunction<GeomesaFeature> implem
         allParameters.put("geomesa.batchwriter.memory", "52428800");
         allParameters.put("geomesa.batchwriter.timeout.millis", "600000");
 
-        datastore = dataStoreFactory.apply(allParameters);
-        SimpleFeatureType feature = datastore.getSchema("telemetry");
+        //Geomesa Data Store used for getting GeoMesaFeatureStore
+        DataStore datastore = dataStoreFactory.apply(allParameters);
+        SimpleFeatureType feature = datastore.getSchema("telemetry_status");
         if (feature == null) {
-            datastore.createSchema(TelemetrySimpleFeatureTypeBuilder.getFeatureType());
+            datastore.createSchema(TelemetryStatusSimpleFeatureTypeBuilder.getFeatureType());
         }
-        featureStore = (GeoMesaFeatureStore) datastore.getFeatureSource(TelemetrySimpleFeatureTypeBuilder.getFeatureType().getTypeName());
+        feature = datastore.getSchema("telemetry_value");
+        if (feature == null) {
+            datastore.createSchema(TelemetryValueSimpleFeatureTypeBuilder.getFeatureType());
+        }
+        statusFeatureStore = (GeoMesaFeatureStore) datastore.getFeatureSource(TelemetryStatusSimpleFeatureTypeBuilder.getFeatureType().getTypeName());
+        valueFeatureStore = (GeoMesaFeatureStore) datastore.getFeatureSource(TelemetryValueSimpleFeatureTypeBuilder.getFeatureType().getTypeName());
 
         //Initialize ProcessingTimeService
         this.processingTimeService = ((StreamingRuntimeContext) getRuntimeContext()).getProcessingTimeService();
@@ -167,7 +174,17 @@ public class GeoMesaBufferedSink extends RichSinkFunction<GeomesaFeature> implem
     }
 
     private void storeMessageToGeomesa() {
-        SimpleFeatureCollection collection = DataUtilities.collection(this.bufferedMessages);
-        featureStore.addFeatures(collection);
+        List<SimpleFeature> statuses = this.bufferedMessages.stream()
+                .map(TelemetryFeatureWrapper::getStatusFeature)
+                .collect(Collectors.toList());
+        SimpleFeatureCollection statusesCollection = DataUtilities.collection(statuses);
+        statusFeatureStore.addFeatures(statusesCollection);
+
+        List<SimpleFeature> values = this.bufferedMessages.stream()
+                .map(TelemetryFeatureWrapper::getValueFeatures)
+                .flatMap(Collection::stream)
+                .collect(Collectors.toList());
+        SimpleFeatureCollection valuesCollection = DataUtilities.collection(values);
+        valueFeatureStore.addFeatures(valuesCollection);
     }
 }

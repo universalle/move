@@ -7,7 +7,7 @@ import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.typeutils.ResultTypeQueryable;
 import org.apache.flink.configuration.Configuration;
 
-public class DeserializeMapFunction<T> extends RichMapFunction<byte[], T> implements ResultTypeQueryable {
+public class DeserializeMapFunction<T> extends RichMapFunction<byte[], T> implements ResultTypeQueryable<T> {
 
     private static final long serialVersionUID = 7543482211529843854L;
 
@@ -31,7 +31,7 @@ public class DeserializeMapFunction<T> extends RichMapFunction<byte[], T> implem
     }
 
     @Override
-    public TypeInformation getProducedType() {
+    public TypeInformation<T> getProducedType() {
         return TypeInformation.of(classType);
     }
 }

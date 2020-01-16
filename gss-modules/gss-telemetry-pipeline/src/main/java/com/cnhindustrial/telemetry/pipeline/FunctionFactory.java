@@ -1,10 +1,10 @@
 package com.cnhindustrial.telemetry.pipeline;
 
 import com.cnhindustrial.telemetry.GeoMesaBufferedSink;
-import com.cnhindustrial.telemetry.GeomesaFeature;
 import com.cnhindustrial.telemetry.common.json.FileBytesInputFormat;
 import com.cnhindustrial.telemetry.common.model.TelemetryDto;
 
+import com.cnhindustrial.telemetry.model.TelemetryFeatureWrapper;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
@@ -98,7 +98,7 @@ class FunctionFactory {
         return new PrintSinkFunction<>();
     }
 
-    SinkFunction<GeomesaFeature> getMachineDataSink() {
+    SinkFunction<TelemetryFeatureWrapper> getMachineDataSink() {
         LOGGER.info("Building Machine Data sink function connected to Geomesa.");
         return new GeoMesaBufferedSink();
     }

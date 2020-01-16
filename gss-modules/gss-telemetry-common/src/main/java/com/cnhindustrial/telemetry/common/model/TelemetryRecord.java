@@ -64,6 +64,8 @@ public class TelemetryRecord implements Serializable {
     private Long techType;
     @JsonProperty("pos")
     private Position position;
+    @JsonProperty("line")
+    private int line;
 
     @JsonProperty("messageType")
     public String getMessageType() {
@@ -281,6 +283,14 @@ public class TelemetryRecord implements Serializable {
 
     public void setTechType(Long techType) {
         this.techType = techType;
+    }
+
+    public int getLine() {
+        return line;
+    }
+
+    public void setLine(int line) {
+        this.line = line;
     }
 
     @Override

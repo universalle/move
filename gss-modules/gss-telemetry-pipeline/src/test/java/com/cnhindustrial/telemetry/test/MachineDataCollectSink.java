@@ -1,6 +1,6 @@
 package com.cnhindustrial.telemetry.test;
 
-import com.cnhindustrial.telemetry.GeomesaFeature;
+import com.cnhindustrial.telemetry.model.TelemetryFeatureWrapper;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * Testing sink.
  */
-public class MachineDataCollectSink implements SinkFunction<GeomesaFeature> {
+public class MachineDataCollectSink implements SinkFunction<TelemetryFeatureWrapper> {
 
     private static final long serialVersionUID = 428694870703857546L;
 
@@ -22,15 +22,15 @@ public class MachineDataCollectSink implements SinkFunction<GeomesaFeature> {
      * must be static
      * https://ci.apache.org/projects/flink/flink-docs-stable/dev/stream/testing.html#junit-rule-miniclusterwithclientresource
      */
-    private static final List<GeomesaFeature> values = new ArrayList<>();
+    private static final List<TelemetryFeatureWrapper> values = new ArrayList<>();
 
     @Override
-    public synchronized void invoke(GeomesaFeature value, Context context) throws Exception {
+    public synchronized void invoke(TelemetryFeatureWrapper value, Context context) throws Exception {
         LOGGER.info("SINK:\n> {}", value);
         values.add(value);
     }
 
-    public List<GeomesaFeature> getValues() {
+    public List<TelemetryFeatureWrapper> getValues() {
         return Collections.unmodifiableList(values);
     }
 

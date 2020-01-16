@@ -1,17 +1,19 @@
 package com.cnhindustrial.telemetry.pipeline;
 
-import com.cnhindustrial.telemetry.GeomesaFeature;
 import com.cnhindustrial.telemetry.common.model.ControllerDto;
 import com.cnhindustrial.telemetry.common.model.TelemetryDto;
 import com.cnhindustrial.telemetry.converter.GeomesaControllerFeatureConverter;
-import com.cnhindustrial.telemetry.converter.GeomesaFeatureConverter;
+import com.cnhindustrial.telemetry.converter.TelemetryConverter;
 import com.cnhindustrial.telemetry.function.DeserializeMapFunction;
+import com.cnhindustrial.telemetry.model.TelemetryFeatureWrapper;
 import com.cnhindustrial.telemetry.function.SideOutputProcessFunction;
 import com.cnhindustrial.telemetry.function.TelemetryDtoConverter;
 import com.twitter.chill.java.UnmodifiableMapSerializer;
 
+import de.javakaffee.kryoserializers.CollectionsSingletonListSerializer;
 import de.javakaffee.kryoserializers.UnmodifiableCollectionsSerializer;
 
+import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.streaming.api.datastream.DataStream;
@@ -22,6 +24,8 @@ import org.apache.flink.streaming.api.functions.sink.PrintSinkFunction;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.flink.streaming.api.functions.source.SourceFunction;
 import org.apache.flink.util.OutputTag;
+import org.geotools.feature.simple.SimpleFeatureImpl;
+import org.geotools.util.UnmodifiableArrayList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,12 +35,12 @@ public class IngestPipeline {
 
     private final SourceFunction<byte[]> telemetryDataSource;
     private final DataStreamSource<byte[]> controllerDataSource;
-    private final SinkFunction<GeomesaFeature> machineDataSink;
+    private final SinkFunction<TelemetryFeatureWrapper> machineDataSink;
     private final SinkFunction<TelemetryDto> deadLetterSink;
 
     IngestPipeline(SourceFunction<byte[]> telemetryDataSource,
                    DataStreamSource<byte[]> controllerDataSource,
-                   SinkFunction<GeomesaFeature> machineDataSink,
+                   SinkFunction<TelemetryFeatureWrapper> machineDataSink,
                    SinkFunction<TelemetryDto> deadLetterSink) {
         this.telemetryDataSource = telemetryDataSource;
         this.controllerDataSource = controllerDataSource;
@@ -52,23 +56,30 @@ public class IngestPipeline {
                 .build();
 
         StreamExecutionEnvironment see = StreamExecutionEnvironment.getExecutionEnvironment();
-
-        see.getConfig().setGlobalJobParameters(parameters);
-        Class<?> unmodColl = Class.forName("java.util.Collections$UnmodifiableCollection");
-        see.getConfig().addDefaultKryoSerializer(unmodColl, UnmodifiableCollectionsSerializer.class);
-        Class<?> unmodMap = Class.forName("java.util.Collections$UnmodifiableMap");
-        see.getConfig().addDefaultKryoSerializer(unmodMap, UnmodifiableMapSerializer.class);
+        configureExecutionEnvironment(see.getConfig(), parameters);
 
         FunctionFactory functionFactory = new FunctionFactory(parameters);
 
         IngestPipeline ingestPipeline = new IngestPipeline(
                 functionFactory.getTelemetryDataSource(),
                 functionFactory.getControllerDataSource(see),
-                new PrintSinkFunction<>(), // TODO functionFactory.getMachineDataSink(),
+                functionFactory.getMachineDataSink(),
                 functionFactory.getDeadLetterSink());
 
         ingestPipeline.build(see);
         ingestPipeline.execute(see);
+    }
+
+    static void configureExecutionEnvironment(ExecutionConfig execConfig, ParameterTool parameters) throws Exception {
+        execConfig.setGlobalJobParameters(parameters);
+
+        Class<?> unmodifiableCollection = Class.forName("java.util.Collections$UnmodifiableCollection");
+        execConfig.addDefaultKryoSerializer(unmodifiableCollection, UnmodifiableCollectionsSerializer.class);
+
+        Class<?> unmodifiableMap = Class.forName("java.util.Collections$UnmodifiableMap");
+        execConfig.addDefaultKryoSerializer(unmodifiableMap, UnmodifiableMapSerializer.class);
+
+        execConfig.addDefaultKryoSerializer(UnmodifiableArrayList.class, CollectionsSingletonListSerializer.class);
     }
 
     /**
@@ -114,8 +125,8 @@ public class IngestPipeline {
 
 //        DataStream<ControllerDto> controllerMergeStream = ste.toAppendStream(mergedTable, ControllerDto.class);
 
-        DataStream<GeomesaFeature> telemetryFeatureStream = flattenTelemetryStream.getSideOutput(outputTag)
-                .map(new GeomesaFeatureConverter())
+        DataStream<TelemetryFeatureWrapper> telemetryFeatureStream = flattenTelemetryStream.getSideOutput(outputTag)
+                .map(new TelemetryConverter())
                 .name("Telemetry Feature converter")
                 .uid("telemetry-feature-converter");
 
@@ -123,7 +134,7 @@ public class IngestPipeline {
                 .name("Sink Telemetry data to Buffered List")
                 .uid("telemetry-geomesa-sink");
 
-        DataStream<GeomesaFeature> controllerFeatureStream = controllerStream
+        DataStream<SimpleFeatureImpl> controllerFeatureStream = controllerStream
                 .map(new GeomesaControllerFeatureConverter())
                 .name("Controller Feature converter")
                 .uid("controller-feature-converter");

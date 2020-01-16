@@ -1,4 +1,4 @@
-package com.cnhindustrial.telemetry;
+package com.cnhindustrial.telemetry.model;
 
 import org.geotools.factory.CommonFactoryFinder;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
@@ -13,24 +13,21 @@ import java.io.Serializable;
  *  Adapter for SimpleFeatureImpl class
  *  Which add Serializable functionality
  */
-public class GeomesaFeature extends SimpleFeatureImpl implements Serializable {
-
-    private static final long serialVersionUID = 7094069468996697390L;
+public class TelemetryValueGeomesaFeature extends SimpleFeatureImpl implements Serializable {
 
     private static FilterFactory2 FILTER_FACTORY = CommonFactoryFinder.getFilterFactory2(null);
-    private static boolean DEFAULT_VALIDATION_STATE = false;
+    private static final boolean DEFAULT_VALIDATION_STATE = false;
 
-    private GeomesaFeature(Object[] values, SimpleFeatureType featureType, FeatureId id, boolean validating) {
+    private TelemetryValueGeomesaFeature(Object[] values, SimpleFeatureType featureType, FeatureId id, boolean validating) {
         super(values, featureType, id, validating);
     }
 
-    public static GeomesaFeature newInstance() {
-        SimpleFeatureType featureType = TelemetrySimpleFeatureTypeBuilder.getFeatureType();
-        return new GeomesaFeature(
+    public static TelemetryValueGeomesaFeature newInstance() {
+        SimpleFeatureType featureType = TelemetryValueSimpleFeatureTypeBuilder.getFeatureType();
+        return new TelemetryValueGeomesaFeature(
                 new Object[featureType.getAttributeCount()],
                 featureType,
                 FILTER_FACTORY.featureId(SimpleFeatureBuilder.createDefaultFeatureId()),
                 DEFAULT_VALIDATION_STATE);
     }
 }
-

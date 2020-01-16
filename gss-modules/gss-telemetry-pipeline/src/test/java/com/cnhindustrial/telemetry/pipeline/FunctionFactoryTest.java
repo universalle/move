@@ -1,8 +1,8 @@
 package com.cnhindustrial.telemetry.pipeline;
 
-import com.cnhindustrial.telemetry.GeomesaFeature;
 import com.cnhindustrial.telemetry.common.model.TelemetryDto;
 
+import com.cnhindustrial.telemetry.model.TelemetryFeatureWrapper;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.PrintSinkFunction;
@@ -60,7 +60,7 @@ class FunctionFactoryTest {
 
     @Test
     void getMachineDataSink() {
-        SinkFunction<GeomesaFeature> machineDataSink =
+        SinkFunction<TelemetryFeatureWrapper> machineDataSink =
                 new FunctionFactory(ParameterTool.fromMap(emptyMap())).getMachineDataSink();
         assertThat(machineDataSink, Matchers.instanceOf(PrintSinkFunction.class));
     }
