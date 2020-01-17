@@ -48,6 +48,10 @@ public class TelemetryRecord implements Serializable {
     private double last;
     @JsonProperty("translatedValue")
     private double translatedValue;
+    @JsonProperty("unit")
+    private String unit;
+    @JsonProperty("unitCode")
+    private String unitCode;
     @JsonProperty("decodedValue")
     private String decodedValue;
     @JsonProperty("time")
@@ -197,6 +201,22 @@ public class TelemetryRecord implements Serializable {
         this.translatedValue = translatedValue;
     }
 
+    public String getUnit() {
+        return unit;
+    }
+
+    public void setUnit(String unit) {
+        this.unit = unit;
+    }
+
+    public String getUnitCode() {
+        return unitCode;
+    }
+
+    public void setUnitCode(String unitCode) {
+        this.unitCode = unitCode;
+    }
+
     public double getMax() {
         return max;
     }
@@ -283,6 +303,14 @@ public class TelemetryRecord implements Serializable {
 
     public void setTechType(Long techType) {
         this.techType = techType;
+    }
+
+    public Position getPosition() {
+        return position;
+    }
+
+    public void setPosition(Position position) {
+        this.position = position;
     }
 
     public int getLine() {

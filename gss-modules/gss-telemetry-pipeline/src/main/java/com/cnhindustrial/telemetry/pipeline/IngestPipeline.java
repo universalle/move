@@ -2,20 +2,26 @@ package com.cnhindustrial.telemetry.pipeline;
 
 import com.cnhindustrial.telemetry.common.model.ControllerDto;
 import com.cnhindustrial.telemetry.common.model.TelemetryDto;
+import com.cnhindustrial.telemetry.common.model.TelemetryRecord;
 import com.cnhindustrial.telemetry.converter.GeomesaControllerFeatureConverter;
 import com.cnhindustrial.telemetry.converter.TelemetryConverter;
 import com.cnhindustrial.telemetry.function.DeserializeMapFunction;
+import com.cnhindustrial.telemetry.function.MessageDeserializeFunction;
+import com.cnhindustrial.telemetry.function.StatusKeySelector;
+import com.cnhindustrial.telemetry.function.StatusKeySelector.TelemetryKey;
+import com.cnhindustrial.telemetry.function.TelemetryCoFlatMapFunction;
+import com.cnhindustrial.telemetry.function.TelemetryKeySelector;
+import com.cnhindustrial.telemetry.function.TelemetryTimeJoinFunction;
 import com.cnhindustrial.telemetry.model.TelemetryFeatureWrapper;
-import com.cnhindustrial.telemetry.function.SideOutputProcessFunction;
-import com.cnhindustrial.telemetry.function.TelemetryDtoConverter;
+import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import com.twitter.chill.java.UnmodifiableMapSerializer;
 
 import de.javakaffee.kryoserializers.CollectionsSingletonListSerializer;
 import de.javakaffee.kryoserializers.UnmodifiableCollectionsSerializer;
 
 import org.apache.flink.api.common.ExecutionConfig;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.utils.ParameterTool;
+import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
@@ -23,7 +29,6 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.PrintSinkFunction;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.flink.streaming.api.functions.source.SourceFunction;
-import org.apache.flink.util.OutputTag;
 import org.geotools.feature.simple.SimpleFeatureImpl;
 import org.geotools.util.UnmodifiableArrayList;
 import org.slf4j.Logger;
@@ -57,6 +62,7 @@ public class IngestPipeline {
 
         StreamExecutionEnvironment see = StreamExecutionEnvironment.getExecutionEnvironment();
         configureExecutionEnvironment(see.getConfig(), parameters);
+        see.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 
         FunctionFactory functionFactory = new FunctionFactory(parameters);
 
@@ -97,21 +103,29 @@ public class IngestPipeline {
                 .name("Message from Blob Storage")
                 .uid("blob-storage-source");
 
-        OutputTag<TelemetryDto> outputTag = new OutputTag<>("telemetry-cache", TypeInformation.of(TelemetryDto.class));
+        MessageDeserializeFunction messageDeserializeFunction = new MessageDeserializeFunction();
 
-        SingleOutputStreamOperator<TelemetryDto> flattenTelemetryStream = rawMessageStream
-                .map(new DeserializeMapFunction<>(TelemetryDto.class))
+
+        SingleOutputStreamOperator<TelemetryDto> statusStream = rawMessageStream
+                .process(messageDeserializeFunction)
                 .name("Deserialize Telemetry")
-                .uid("deserialize-telemetry")
+                .uid("deserialize-telemetry");
 
-                .process(new SideOutputProcessFunction<>(outputTag, new TelemetryDtoConverter(), TelemetryDto.class))
-                .name("Telemetry Side Output")
-                .uid("telemetry-side-output");
+        DataStream<TelemetryRecord> telemetryStream = statusStream.getSideOutput(messageDeserializeFunction.getSideStreamTag());
 
-        SingleOutputStreamOperator<ControllerDto> controllerStream = rawControllerStream
-                .map(new DeserializeMapFunction<>(ControllerDto.class))
-                .name("Deserialize Controller Data")
-                .uid("deserialize-controller");
+        SingleOutputStreamOperator<TelemetryDto> process = statusStream
+                .assignTimestampsAndWatermarks(new StatusWatermarkAssigner())
+                .keyBy(new StatusKeySelector())
+                .connect(telemetryStream.keyBy(new TelemetryKeySelector()))
+//                .flatMap(new TelemetryCoFlatMapFunction());
+                .process(new TelemetryTimeJoinFunction());
+
+        process.addSink(deadLetterSink);
+
+//        SingleOutputStreamOperator<ControllerDto> controllerStream = rawControllerStream
+//                .map(new DeserializeMapFunction<>(ControllerDto.class))
+//                .name("Deserialize Controller Data")
+//                .uid("deserialize-controller");
 
 //        StreamTableSource<FlattenTelemetryDto> telemetryTableSource = new FlattenTelemetryTableSource(flattenTelemetryStream);
 //        StreamTableSource<ControllerDto> controllerTableSource = new ControllerTableSource(controllerStream);
@@ -125,23 +139,23 @@ public class IngestPipeline {
 
 //        DataStream<ControllerDto> controllerMergeStream = ste.toAppendStream(mergedTable, ControllerDto.class);
 
-        DataStream<TelemetryFeatureWrapper> telemetryFeatureStream = flattenTelemetryStream.getSideOutput(outputTag)
-                .map(new TelemetryConverter())
-                .name("Telemetry Feature converter")
-                .uid("telemetry-feature-converter");
-
-        telemetryFeatureStream.addSink(machineDataSink)
-                .name("Sink Telemetry data to Buffered List")
-                .uid("telemetry-geomesa-sink");
-
-        DataStream<SimpleFeatureImpl> controllerFeatureStream = controllerStream
-                .map(new GeomesaControllerFeatureConverter())
-                .name("Controller Feature converter")
-                .uid("controller-feature-converter");
-
-        controllerFeatureStream.addSink(new PrintSinkFunction<>())
-                .name("Sink Controller data to Buffered List")
-                .uid("controller-geomesa-sink");
+//        DataStream<TelemetryFeatureWrapper> telemetryFeatureStream = process
+//                .map(new TelemetryConverter())
+//                .name("Telemetry Feature converter")
+//                .uid("telemetry-feature-converter");
+//
+//        telemetryFeatureStream.addSink(machineDataSink)
+//                .name("Sink Telemetry data to Buffered List")
+//                .uid("telemetry-geomesa-sink");
+//
+//        DataStream<SimpleFeatureImpl> controllerFeatureStream = controllerStream
+//                .map(new GeomesaControllerFeatureConverter())
+//                .name("Controller Feature converter")
+//                .uid("controller-feature-converter");
+//
+//        controllerFeatureStream.addSink(new PrintSinkFunction<>())
+//                .name("Sink Controller data to Buffered List")
+//                .uid("controller-geomesa-sink");
     }
 
     /**
