@@ -118,9 +118,13 @@ public class GeoMesaBufferedSink extends RichSinkFunction<TelemetryFeatureWrappe
         Map<String, String> globalJobConfiguration = getRuntimeContext().getExecutionConfig().getGlobalJobParameters().toMap();
         Map<String, String> allParameters = new HashMap<>(globalJobConfiguration);
 
-        allParameters.put("cassandra.contact.point", "127.0.0.1:9042");
-        allParameters.put("cassandra.keyspace", "mykeyspace");
-        allParameters.put("cassandra.catalog", "telemetry");
+        String cassandraContactPoint = allParameters.getOrDefault("cassandra.contact.point", "127.0.0.1:9042");
+        String cassandraKeyspace = allParameters.getOrDefault("cassandra.keyspace", "mykeyspace");
+        String cassandraCatalog = allParameters.getOrDefault("cassandra.catalog", "telemetry");
+
+        allParameters.put("cassandra.contact.point", cassandraContactPoint);
+        allParameters.put("cassandra.keyspace", cassandraKeyspace);
+        allParameters.put("cassandra.catalog", cassandraCatalog);
         allParameters.put("geomesa.batchwriter.maxthreads", "10");
         allParameters.put("geomesa.batchwriter.latency.millis", "60000");
         allParameters.put("geomesa.batchwriter.memory", "52428800");
