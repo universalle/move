@@ -5,7 +5,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class TelemetryMessageBuilder extends MessageBuilder {
 
-    private final String statusMessageTemplate = "{" +
+    private static final String STATUS_MESSAGE_TEMPLATE = "{" +
             "\"messageType\":\"Status\"," +
             "\"pos\": {" +
             "  \"pdop\":-1," +
@@ -25,10 +25,10 @@ public class TelemetryMessageBuilder extends MessageBuilder {
             "}," +
             "\"networkinfo\":{" +
             "  \"rssi\":48," +
-            "  \"mnc\":\"610\"," +
-            "  \"networkStatus\":\"roaming\"," +
+            "  \"MNC\":\"610\"," +
+            "  \"NetworkStatus\":\"roaming\"," +
             "  \"connection\":\"UMTS\"," +
-            "  \"mcc\":\"302\"," +
+            "  \"MCC\":\"302\"," +
             "  \"operatorName\":\"DATA ONLY (Bell)\"" +
             "}," +
             "\"telemetryRecords\":[" +
@@ -46,7 +46,7 @@ public class TelemetryMessageBuilder extends MessageBuilder {
 
     @Override
     public String getTemplate() {
-        return statusMessageTemplate;
+        return STATUS_MESSAGE_TEMPLATE;
     }
 
     @Override

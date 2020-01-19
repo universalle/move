@@ -7,6 +7,7 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -40,7 +41,7 @@ public class TelemetryDto implements Serializable {
     @JsonProperty("techType")
     private String techType;
     @JsonProperty("telemetryRecords")
-    private List<TelemetryRecord> telemetryRecords;
+    private List<TelemetryRecord> telemetryRecords = new ArrayList<>();
 
     @JsonProperty("messageType")
     public String getMessageType() {
