@@ -10,7 +10,7 @@ import java.io.Serializable;
 import java.util.Date;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class TelemetryRecord implements Serializable {
+public class TelemetryRecord implements Serializable, TelemetryMessage {
 
     private static final long serialVersionUID = -4387294490319968863L;
 
@@ -257,6 +257,7 @@ public class TelemetryRecord implements Serializable {
         this.decodedValue = decodedValue;
     }
 
+    @Override
     public Date getTime() {
         return time;
     }
@@ -265,6 +266,7 @@ public class TelemetryRecord implements Serializable {
         this.time = time;
     }
 
+    @Override
     public Long getDeviceId() {
         return deviceId;
     }
@@ -273,6 +275,7 @@ public class TelemetryRecord implements Serializable {
         this.deviceId = deviceId;
     }
 
+    @Override
     public String getAssetId() {
         return assetId;
     }

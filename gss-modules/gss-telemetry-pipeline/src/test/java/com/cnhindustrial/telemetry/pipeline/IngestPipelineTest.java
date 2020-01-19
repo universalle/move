@@ -55,7 +55,7 @@ class IngestPipelineTest {
 //        see.getConfig().registerTypeWithKryoSerializer(TelemetryRecord.class, FieldSerializer.class);
 
         // configure your test environment
-        see.setParallelism(4);
+        see.setParallelism(32);
         see.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
         see.setStateBackend((StateBackend) new MemoryStateBackend());
 
@@ -91,8 +91,9 @@ class IngestPipelineTest {
         List<TelemetryDto> values = machineDataCollectSink.getValues();
         final Integer collect = values.stream()
                 .map(s -> s.getTelemetryRecords().size())
-                .peek(System.out::println)
+//                .peek(System.out::println)
                 .collect(Collectors.summingInt(Integer::intValue));
-        assertThat(values.size(), Matchers.is(150));
+        assertThat(values.size(), Matchers.is(147));
+        assertThat(collect, Matchers.is(2123));
     }
 }

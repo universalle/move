@@ -1,19 +1,11 @@
 package com.cnhindustrial.telemetry.pipeline;
 
-import com.cnhindustrial.telemetry.common.model.ControllerDto;
 import com.cnhindustrial.telemetry.common.model.TelemetryDto;
-import com.cnhindustrial.telemetry.common.model.TelemetryRecord;
-import com.cnhindustrial.telemetry.converter.GeomesaControllerFeatureConverter;
-import com.cnhindustrial.telemetry.converter.TelemetryConverter;
-import com.cnhindustrial.telemetry.function.DeserializeMapFunction;
-import com.cnhindustrial.telemetry.function.MessageDeserializeFunction;
-import com.cnhindustrial.telemetry.function.StatusKeySelector;
-import com.cnhindustrial.telemetry.function.StatusKeySelector.TelemetryKey;
-import com.cnhindustrial.telemetry.function.TelemetryCoFlatMapFunction;
-import com.cnhindustrial.telemetry.function.TelemetryKeySelector;
-import com.cnhindustrial.telemetry.function.TelemetryTimeJoinFunction;
+import com.cnhindustrial.telemetry.common.model.TelemetryMessage;
+import com.cnhindustrial.telemetry.function.MessageDeserializeFunction2;
+import com.cnhindustrial.telemetry.function.ProcessWindowFunction2;
+import com.cnhindustrial.telemetry.function.TelemetryKeySelector2;
 import com.cnhindustrial.telemetry.model.TelemetryFeatureWrapper;
-import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import com.twitter.chill.java.UnmodifiableMapSerializer;
 
 import de.javakaffee.kryoserializers.CollectionsSingletonListSerializer;
@@ -26,13 +18,17 @@ import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.api.functions.sink.PrintSinkFunction;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.flink.streaming.api.functions.source.SourceFunction;
-import org.geotools.feature.simple.SimpleFeatureImpl;
+import org.apache.flink.streaming.api.windowing.assigners.EventTimeSessionWindows;
+import org.apache.flink.streaming.api.windowing.time.Time;
+import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.geotools.util.UnmodifiableArrayList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Collection;
+import java.util.Collections;
 
 public class IngestPipeline {
 
@@ -97,28 +93,38 @@ public class IngestPipeline {
         DataStream<byte[]> rawMessageStream = see
                 .addSource(telemetryDataSource)
                 .name("Message From Event Hub")
-                .uid("eventhub-source");
+                .uid("eventhub-source")
+                .setParallelism(1);
 
         DataStream<byte[]> rawControllerStream = controllerDataSource
                 .name("Message from Blob Storage")
                 .uid("blob-storage-source");
 
-        MessageDeserializeFunction messageDeserializeFunction = new MessageDeserializeFunction();
+        MessageDeserializeFunction2 messageDeserializeFunction = new MessageDeserializeFunction2();
 
-
-        SingleOutputStreamOperator<TelemetryDto> statusStream = rawMessageStream
+        DataStream<TelemetryMessage> statusStream = rawMessageStream
                 .process(messageDeserializeFunction)
                 .name("Deserialize Telemetry")
-                .uid("deserialize-telemetry");
+                .uid("deserialize-telemetry")
+                .rebalance();
 
-        DataStream<TelemetryRecord> telemetryStream = statusStream.getSideOutput(messageDeserializeFunction.getSideStreamTag());
+        DataStream<TelemetryDto> process = statusStream
+                .assignTimestampsAndWatermarks(new StatusWatermarkAssigner2())
+                .keyBy(new TelemetryKeySelector2())
+                .window(EventTimeSessionWindows.withGap(Time.milliseconds(100)))
+//                .window(new EventTimeSessionWindows2(3050))
+//                .trigger(CountTrigger.of(3))
+                .process(new ProcessWindowFunction2())
+                .setParallelism(4);
 
-        SingleOutputStreamOperator<TelemetryDto> process = statusStream
-                .assignTimestampsAndWatermarks(new StatusWatermarkAssigner())
-                .keyBy(new StatusKeySelector())
-                .connect(telemetryStream.keyBy(new TelemetryKeySelector()))
+//        DataStream<TelemetryRecord> telemetryStream = statusStream.getSideOutput(messageDeserializeFunction.getSideStreamTag());
+//
+//        SingleOutputStreamOperator<TelemetryDto> process = statusStream
+//                .assignTimestampsAndWatermarks(new StatusWatermarkAssigner())
+//                .keyBy(new StatusKeySelector())
+//                .connect(telemetryStream.keyBy(new TelemetryKeySelector()))
 //                .flatMap(new TelemetryCoFlatMapFunction());
-                .process(new TelemetryTimeJoinFunction());
+//                .process(new TelemetryTimeJoinFunction());
 
         process.addSink(deadLetterSink);
 
