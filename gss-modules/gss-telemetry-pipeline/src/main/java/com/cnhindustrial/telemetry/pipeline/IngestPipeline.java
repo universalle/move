@@ -5,6 +5,7 @@ import com.cnhindustrial.telemetry.common.model.TelemetryDto;
 import com.cnhindustrial.telemetry.converter.GeomesaControllerFeatureConverter;
 import com.cnhindustrial.telemetry.converter.TelemetryConverter;
 import com.cnhindustrial.telemetry.function.DeserializeMapFunction;
+import com.cnhindustrial.telemetry.function.TelemetryValidationFunction;
 import com.cnhindustrial.telemetry.model.TelemetryFeatureWrapper;
 import com.cnhindustrial.telemetry.function.SideOutputProcessFunction;
 import com.cnhindustrial.telemetry.function.TelemetryDtoConverter;
@@ -99,11 +100,16 @@ public class IngestPipeline {
 
         OutputTag<TelemetryDto> outputTag = new OutputTag<>("telemetry-cache", TypeInformation.of(TelemetryDto.class));
 
-        SingleOutputStreamOperator<TelemetryDto> flattenTelemetryStream = rawMessageStream
+        SingleOutputStreamOperator<TelemetryDto> validatedTelemetryStream = rawMessageStream
                 .map(new DeserializeMapFunction<>(TelemetryDto.class))
                 .name("Deserialize Telemetry")
                 .uid("deserialize-telemetry")
+                .process(new TelemetryValidationFunction(outputTag))
+                .name("Telemetry Validation Output")
+                .uid("telemetry-validation-output");
 
+        outputTag = new OutputTag<>("telemetry-cache", TypeInformation.of(TelemetryDto.class));
+        SingleOutputStreamOperator<TelemetryDto> flattenTelemetryStream = validatedTelemetryStream
                 .process(new SideOutputProcessFunction<>(outputTag, new TelemetryDtoConverter(), TelemetryDto.class))
                 .name("Telemetry Side Output")
                 .uid("telemetry-side-output");

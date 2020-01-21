@@ -6,8 +6,6 @@ import org.apache.flink.api.common.serialization.AbstractDeserializationSchema;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.time.ZoneId;
-import java.util.TimeZone;
 
 public class BaseDeserializationSchema<T> extends AbstractDeserializationSchema<T> {
 
@@ -22,7 +20,6 @@ public class BaseDeserializationSchema<T> extends AbstractDeserializationSchema<
 
         // Adding date format
         SimpleDateFormat dateFormat = new SimpleDateFormat(ZULU_TIME_FORMAT);
-        dateFormat.setTimeZone(TimeZone.getTimeZone(ZoneId.of("UTC")));
         mapper.setDateFormat(dateFormat);
 
         return mapper;
