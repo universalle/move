@@ -98,7 +98,7 @@ public class IngestPipeline {
                 .name("Message from Blob Storage")
                 .uid("blob-storage-source");
 
-        OutputTag<TelemetryDto> outputTag = new OutputTag<>("telemetry-cache", TypeInformation.of(TelemetryDto.class));
+        OutputTag<TelemetryDto> outputTag = new OutputTag<>("invalid-messages", TypeInformation.of(TelemetryDto.class));
 
         SingleOutputStreamOperator<TelemetryDto> validatedTelemetryStream = rawMessageStream
                 .map(new DeserializeMapFunction<>(TelemetryDto.class))
@@ -107,6 +107,11 @@ public class IngestPipeline {
                 .process(new TelemetryValidationFunction(outputTag))
                 .name("Telemetry Validation Output")
                 .uid("telemetry-validation-output");
+
+        validatedTelemetryStream.getSideOutput(outputTag)
+                .addSink(deadLetterSink)
+                .name("Sink Invalid Telemetry data to Dead Letter Queue")
+                .uid("dead-letter-queue-sink");
 
         outputTag = new OutputTag<>("telemetry-cache", TypeInformation.of(TelemetryDto.class));
         SingleOutputStreamOperator<TelemetryDto> flattenTelemetryStream = validatedTelemetryStream
