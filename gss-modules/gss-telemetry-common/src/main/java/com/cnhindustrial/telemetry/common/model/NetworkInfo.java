@@ -1,6 +1,6 @@
 package com.cnhindustrial.telemetry.common.model;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.io.Serializable;
 
@@ -70,10 +70,10 @@ public class NetworkInfo implements Serializable {
     public String toString() {
         return "NetworkInfo{" +
                 "rssi=" + rssi +
-                ", mnc=" + mnc +
-                ", networkStatus='" + networkStatus + '\'' +
+                ", MNC=" + mnc +
+                ", NetworkStatus='" + networkStatus + '\'' +
                 ", connection='" + connection + '\'' +
-                ", mcc=" + mcc +
+                ", MCC=" + mcc +
                 ", operatorName='" + operatorName + '\'' +
                 '}';
     }

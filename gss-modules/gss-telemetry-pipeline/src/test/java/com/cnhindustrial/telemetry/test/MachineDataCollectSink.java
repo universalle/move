@@ -1,6 +1,7 @@
 package com.cnhindustrial.telemetry.test;
 
 import com.cnhindustrial.telemetry.model.TelemetryFeatureWrapper;
+
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,8 +21,7 @@ public class MachineDataCollectSink<T> implements SinkFunction<T> {
     private static final Logger LOGGER = LoggerFactory.getLogger(MachineDataCollectSink.class);
 
     /**
-     * must be static
-     * https://ci.apache.org/projects/flink/flink-docs-stable/dev/stream/testing.html#junit-rule-miniclusterwithclientresource
+     * must be static https://ci.apache.org/projects/flink/flink-docs-stable/dev/stream/testing.html#junit-rule-miniclusterwithclientresource
      */
     private static final List<Object> values = new ArrayList<>();
 
@@ -32,11 +32,10 @@ public class MachineDataCollectSink<T> implements SinkFunction<T> {
     }
 
     public List<T> getValues() {
-        return Collections.unmodifiableList(
-                values.stream()
-                .map(v -> (T)v)
-                .collect(Collectors.toList())
-        );
+        List<T> casted = values.stream()
+                .map(v -> (T) v)
+                .collect(Collectors.toList());
+        return Collections.unmodifiableList(casted);
     }
 
     public void clear() {
