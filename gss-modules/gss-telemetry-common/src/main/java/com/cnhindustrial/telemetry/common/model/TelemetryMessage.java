@@ -1,7 +1,5 @@
 package com.cnhindustrial.telemetry.common.model;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.Date;
 
 public interface TelemetryMessage {

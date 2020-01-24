@@ -11,7 +11,7 @@ import java.util.Date;
 import java.util.List;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class TelemetryDto implements Serializable {
+public class TelemetryDto implements Serializable, TelemetryMessage {
 
     private static final long serialVersionUID = -353712493882313441L;
 
@@ -105,6 +105,11 @@ public class TelemetryDto implements Serializable {
     @JsonProperty("time")
     public Date getTime() {
         return time;
+    }
+
+    @Override
+    public Long getDeviceId() {
+        return getDeviceid();
     }
 
     @JsonProperty("time")

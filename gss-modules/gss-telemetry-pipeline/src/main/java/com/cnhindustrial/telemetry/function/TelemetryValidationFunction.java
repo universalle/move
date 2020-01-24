@@ -32,11 +32,11 @@ public class TelemetryValidationFunction extends ProcessFunction<TelemetryDto, T
     }
 
     private boolean passedValidation(TelemetryDto value) {
-        for (TelemetryValidationRules validationRule : TelemetryValidationRules.values()) {
-            if (!validationRule.validate(value)) {
-                return false;
-            }
-        }
+//        for (TelemetryValidationRules validationRule : TelemetryValidationRules.values()) {
+//            if (!validationRule.validate(value)) {
+//                return false;
+//            }
+//        }
 
         return true;
     }

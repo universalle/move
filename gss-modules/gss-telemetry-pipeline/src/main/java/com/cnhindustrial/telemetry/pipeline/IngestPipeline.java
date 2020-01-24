@@ -111,16 +111,12 @@ public class IngestPipeline {
         OutputTag<TelemetryDto> deadLetterOutput = new OutputTag<>("invalid-messages", TypeInformation.of(TelemetryDto.class));
         MessageDeserializeFunction2 messageDeserializeFunction = new MessageDeserializeFunction2();
 
-        SingleOutputStreamOperator<TelemetryDto> validatedTelemetryStream = rawMessageStream
-                .map(new DeserializeMapFunction<>(TelemetryDto.class))
         DataStream<TelemetryMessage> statusStream = rawMessageStream
                 .process(messageDeserializeFunction)
                 .name("Deserialize Telemetry")
-                .uid("deserialize-telemetry")
-                .process(new TelemetryValidationFunction(deadLetterOutput))
-                .name("Telemetry Validation Output")
-                .uid("telemetry-validation-output");
-                .rebalance();
+                .uid("deserialize-telemetry");
+
+
 
         DataStream<TelemetryDto> process = statusStream
                 .assignTimestampsAndWatermarks(new StatusWatermarkAssigner2())
@@ -130,6 +126,11 @@ public class IngestPipeline {
 //                .trigger(CountTrigger.of(3))
                 .process(new ProcessWindowFunction2())
                 .setParallelism(4);
+
+        SingleOutputStreamOperator<TelemetryDto> validatedTelemetryStream = process
+                .process(new TelemetryValidationFunction(deadLetterOutput))
+                .name("Telemetry Validation Output")
+                .uid("telemetry-validation-output");
 
         validatedTelemetryStream.getSideOutput(deadLetterOutput)
                 .addSink(deadLetterSink)
