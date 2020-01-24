@@ -1,6 +1,6 @@
 package com.cnhindustrial.telemetry.common.json;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.text.SimpleDateFormat;
 

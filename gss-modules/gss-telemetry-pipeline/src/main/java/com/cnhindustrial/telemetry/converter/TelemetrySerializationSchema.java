@@ -2,7 +2,8 @@ package com.cnhindustrial.telemetry.converter;
 
 import com.cnhindustrial.telemetry.common.json.ObjectMapperHelper;
 import com.cnhindustrial.telemetry.common.model.TelemetryDto;
-import com.fasterxml.jackson.core.JsonProcessingException;
+
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.flink.streaming.connectors.kafka.KafkaSerializationSchema;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.slf4j.Logger;
