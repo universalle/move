@@ -1,10 +1,14 @@
 package com.cnhindustrial.telemetry.pipeline;
 
 import com.cnhindustrial.telemetry.GeoMesaBufferedSink;
+import com.cnhindustrial.telemetry.common.groovy.GroovyScript;
 import com.cnhindustrial.telemetry.common.json.FileBytesInputFormat;
+import com.cnhindustrial.telemetry.common.json.FileGroovyInputFormat;
 import com.cnhindustrial.telemetry.common.model.TelemetryDto;
 
 import com.cnhindustrial.telemetry.model.TelemetryFeatureWrapper;
+
+import org.apache.flink.api.common.io.FileInputFormat;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
@@ -27,6 +31,10 @@ class FunctionFactory {
     private static final int DEFAULT_BLOB_STORAGE_MONITOR_PARALLELISM = 1;
     private static final int DEFAULT_BLOB_STORAGE_READER_PARALLELISM = 2;
     private static final long DEFAULT_BLOB_STORAGE_MONITOR_INTERVAL_MS = 5000;
+
+    private static final int DEFAULT_VALIDATION_MONITOR_PARALLELISM = 1;
+    private static final int DEFAULT_VALIDATION_READER_PARALLELISM = 1;
+    private static final long DEFAULT_VALIDATION_MONITOR_INTERVAL_MS = 10_000;
 
     private final ParameterTool parameters;
 
@@ -114,5 +122,41 @@ class FunctionFactory {
     SinkFunction<TelemetryFeatureWrapper> getMachineDataSink() {
         LOGGER.info("Building Machine Data sink function connected to Geomesa.");
         return new GeoMesaBufferedSink();
+    }
+
+
+    /**
+     * Periodically monitor (every {@code interval} ms) the parameter-specified {@code filePath} for new data
+     * and read content using {@link FileGroovyInputFormat} as GroovyScript.
+     */
+    DataStreamSource<GroovyScript> getDynamicValidationSource(StreamExecutionEnvironment see) {
+        LOGGER.info("Building Dynamic Validation source function connected to Azure Blob Storage.");
+
+        String filePath = parameters.get("blob.storage.dynamic.validation.path");
+        FileProcessingMode watchType = parameters.has("environment.test")
+                ? FileProcessingMode.PROCESS_ONCE
+                : FileProcessingMode.PROCESS_CONTINUOUSLY;
+
+        LOGGER.debug("Azure Blob Storage dynamic validation path: {}, watch type: {}.",
+                filePath, watchType);
+
+        FileGroovyInputFormat inputFormat = new FileGroovyInputFormat();
+        inputFormat.setFilePath(filePath);
+
+        ContinuousFileMonitoringFunction<GroovyScript> monitoringFunction =
+                new ContinuousFileMonitoringFunction<>(inputFormat,
+                        watchType,
+                        DEFAULT_VALIDATION_MONITOR_PARALLELISM,
+                        DEFAULT_VALIDATION_MONITOR_INTERVAL_MS);
+
+        ContinuousFileReaderOperator<GroovyScript> reader =
+                new ContinuousFileReaderOperator<>(inputFormat);
+
+        SingleOutputStreamOperator<GroovyScript> source = see.addSource(monitoringFunction)
+                .name("Dynamic Validation Source")
+                .transform("Dynamic Validation Reader", inputFormat.getProducedType(), reader)
+                .setParallelism(DEFAULT_VALIDATION_READER_PARALLELISM);
+
+        return new DataStreamSource<>(source);
     }
 }
