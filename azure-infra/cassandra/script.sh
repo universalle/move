@@ -33,7 +33,7 @@ wget -P lib https://repo1.maven.org/maven2/ch/qos/logback/logback-classic/1.1.3/
 wget -P lib https://repo1.maven.org/maven2/com/google/guava/guava/18.0/guava-18.0.jar
 yes | bin/install-jai.sh
 rm lib/t-utils-1.3.1.jar
-wget -P lib http://repo2.maven.org/maven2/org/jaitools/jt-utils/1.3.1/jt-utils-1.3.1.jar
+wget -P lib https://repo1.maven.org/maven2/org/jaitools/jt-utils/1.3.1/jt-utils-1.3.1.jar
 wget -P lib https://repo1.maven.org/maven2/jline/jline/2.12.1/jline-2.12.1.jar
 #bin/geomesa-cassandra
 
