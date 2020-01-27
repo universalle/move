@@ -4,6 +4,7 @@ import org.apache.flink.api.java.utils.ParameterTool;
 import org.junit.jupiter.api.Test;
 
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -12,7 +13,7 @@ class ParameterToolBuilderTest {
 
     @Test
     void mergeEnvironmentVariables() {
-        ParameterTool parameterTool = new ParameterToolBuilder(Function.identity())
+        ParameterTool parameterTool = new ParameterToolBuilder(UnaryOperator.identity())
                 .mergeEnvironmentVariables()
                 .build();
 

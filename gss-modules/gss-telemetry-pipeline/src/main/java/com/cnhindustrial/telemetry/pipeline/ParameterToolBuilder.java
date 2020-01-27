@@ -7,7 +7,7 @@ import org.apache.flink.api.java.utils.ParameterTool;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 public class ParameterToolBuilder {
@@ -18,6 +18,7 @@ public class ParameterToolBuilder {
         DICTIONARY.put("event.hub.telemetry.endpoint", "EVENT_HUB_TELEMETRY_ENDPOINT");
         DICTIONARY.put("event.hub.dead.letter.endpoint", "EVENT_HUB_DEAD_LETTER_ENDPOINT");
         DICTIONARY.put("blob.storage.controller.data.path", "BLOB_STORAGE_CONTROLLER_DATA_PATH");
+        DICTIONARY.put("blob.storage.dynamic.validation.path", "BLOB_STORAGE_DYNAMIC_VALIDATION_PATH");
         DICTIONARY.put("blob.storage.controller.data.interval.ms", "BLOB_STORAGE_CONTROLLER_DATA_INTERVAL");
         DICTIONARY.put("cassandra.contact.point", "CASSANDRA_CONTACT_POINT");
         DICTIONARY.put("cassandra.keyspace", "CASSANDRA_KEYSPACE");
@@ -25,13 +26,13 @@ public class ParameterToolBuilder {
     }
 
     private ParameterTool parameterTool = ParameterTool.fromMap(Collections.emptyMap());
-    private final Function<String, String> environmentVariableReader;
+    private final UnaryOperator<String> environmentVariableReader;
 
     public ParameterToolBuilder() {
         environmentVariableReader = (name -> System.getenv().get(name));
     }
 
-    ParameterToolBuilder(Function<String, String> environmentVariableReader) {
+    ParameterToolBuilder(UnaryOperator<String> environmentVariableReader) {
         this.environmentVariableReader = environmentVariableReader;
     }
 
