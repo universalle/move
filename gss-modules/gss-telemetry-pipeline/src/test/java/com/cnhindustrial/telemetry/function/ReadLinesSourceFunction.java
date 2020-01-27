@@ -20,7 +20,15 @@ public class ReadLinesSourceFunction implements SourceFunction<byte[]> {
     public void run(SourceContext<byte[]> ctx) throws Exception {
         try (Stream<String> lines = Files.lines(Paths.get(filepath))) {
             lines.map(line -> line.getBytes())
-                    .forEach(bytes -> ctx.collect(bytes));
+                    .forEach(bytes -> {
+                        try {
+                            Thread.sleep(500);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+
+                        ctx.collect(bytes);
+                    });
         }
     }
 

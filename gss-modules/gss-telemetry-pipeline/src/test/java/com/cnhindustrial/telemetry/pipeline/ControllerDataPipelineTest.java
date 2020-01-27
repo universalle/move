@@ -1,6 +1,6 @@
 package com.cnhindustrial.telemetry.pipeline;
 
-import com.cnhindustrial.telemetry.test.MachineDataCollectSink;
+import com.cnhindustrial.telemetry.test.SimpleCollectSink;
 import com.cnhindustrial.telemetry.test.MiniClusterWithClientResourceExtension;
 
 import org.apache.flink.api.java.utils.ParameterTool;
@@ -21,7 +21,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 class ControllerDataPipelineTest {
 
     private StreamExecutionEnvironment see;
-    private MachineDataCollectSink machineDataCollectSink;
+    private SimpleCollectSink simpleCollectSink;
     private FunctionFactory functionFactory;
 
     @BeforeEach
@@ -38,12 +38,12 @@ class ControllerDataPipelineTest {
                 .fromMap(map);
         functionFactory = new FunctionFactory(parameters);
 
-        machineDataCollectSink = new MachineDataCollectSink();
+        simpleCollectSink = new SimpleCollectSink();
     }
 
     @AfterEach
     void tearDown() {
-        machineDataCollectSink.clear();
+        simpleCollectSink.clear();
     }
 
     @Test

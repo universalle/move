@@ -1,11 +1,9 @@
 package com.cnhindustrial.telemetry.pipeline;
 
+import com.cnhindustrial.telemetry.common.groovy.GroovyScript;
 import com.cnhindustrial.telemetry.common.model.TelemetryDto;
-import com.cnhindustrial.telemetry.converter.TelemetryConverter;
 import com.cnhindustrial.telemetry.function.DeserializeMapFunction;
-import com.cnhindustrial.telemetry.function.SideOutputProcessFunction;
-import com.cnhindustrial.telemetry.function.TelemetryDtoConverter;
-import com.cnhindustrial.telemetry.function.TelemetryValidationFunction;
+import com.cnhindustrial.telemetry.function.DynamicValidationFunction;
 import com.cnhindustrial.telemetry.model.TelemetryFeatureWrapper;
 import com.twitter.chill.java.UnmodifiableMapSerializer;
 
@@ -13,8 +11,12 @@ import de.javakaffee.kryoserializers.CollectionsSingletonListSerializer;
 import de.javakaffee.kryoserializers.UnmodifiableCollectionsSerializer;
 
 import org.apache.flink.api.common.ExecutionConfig;
+import org.apache.flink.api.common.state.MapStateDescriptor;
+import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.utils.ParameterTool;
+import org.apache.flink.streaming.api.datastream.BroadcastStream;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
@@ -33,17 +35,26 @@ public class IngestPipeline {
 
     private final SourceFunction<byte[]> telemetryDataSource;
     private final DataStreamSource<byte[]> controllerDataSource;
+    private final DataStreamSource<GroovyScript> dynamicValidationSource;
     private final SinkFunction<TelemetryFeatureWrapper> machineDataSink;
     private final SinkFunction<TelemetryDto> deadLetterSink;
     private final SinkFunction<TelemetryDto> logTelemetry;
 
+    public static final MapStateDescriptor<String, GroovyScript> DYNAMIC_VALIDATION_DESCRIPTOR = new MapStateDescriptor(
+            "scripts",
+            BasicTypeInfo.STRING_TYPE_INFO,
+            TypeInformation.of(GroovyScript.class)
+    );
+
     IngestPipeline(SourceFunction<byte[]> telemetryDataSource,
                    DataStreamSource<byte[]> controllerDataSource,
+                   DataStreamSource<GroovyScript> dynamicValidationSource,
                    SinkFunction<TelemetryFeatureWrapper> machineDataSink,
                    SinkFunction<TelemetryDto> deadLetterSink,
                    SinkFunction<TelemetryDto> logTelemetry) {
         this.telemetryDataSource = telemetryDataSource;
         this.controllerDataSource = controllerDataSource;
+        this.dynamicValidationSource = dynamicValidationSource;
         this.machineDataSink = machineDataSink;
         this.deadLetterSink = deadLetterSink;
         this.logTelemetry = logTelemetry;
@@ -64,6 +75,7 @@ public class IngestPipeline {
         IngestPipeline ingestPipeline = new IngestPipeline(
                 functionFactory.getTelemetryDataSource(),
                 functionFactory.getControllerDataSource(see),
+                functionFactory.getDynamicValidationSource(see),
                 functionFactory.getMachineDataSink(),
                 functionFactory.getDeadLetterSink(),
                 new DiscardingSink<>());
@@ -101,29 +113,42 @@ public class IngestPipeline {
 
         OutputTag<TelemetryDto> deadLetterOutput = new OutputTag<>("invalid-messages", TypeInformation.of(TelemetryDto.class));
 
-        SingleOutputStreamOperator<TelemetryDto> validatedTelemetryStream = rawMessageStream
+        SingleOutputStreamOperator<TelemetryDto> deserializedTelemetry = rawMessageStream
                 .map(new DeserializeMapFunction<>(TelemetryDto.class))
                 .name("Deserialize Telemetry")
-                .uid("deserialize-telemetry")
-                .process(new TelemetryValidationFunction(deadLetterOutput))
-                .name("Telemetry Validation Output")
-                .uid("telemetry-validation-output");
+                .uid("deserialize-telemetry");
 
-        validatedTelemetryStream.getSideOutput(deadLetterOutput)
-                .addSink(deadLetterSink)
-                .name("Sink Invalid Telemetry data to Dead Letter Queue")
-                .uid("dead-letter-queue-sink");
+        BroadcastStream<GroovyScript> broadcast = dynamicValidationSource.broadcast(DYNAMIC_VALIDATION_DESCRIPTOR);
 
-        OutputTag<TelemetryDto> telemetryLogOutput = new OutputTag<>("telemetry-cache", TypeInformation.of(TelemetryDto.class));
-        SingleOutputStreamOperator<TelemetryDto> flattenTelemetryStream = validatedTelemetryStream
-                .process(new SideOutputProcessFunction<>(telemetryLogOutput, new TelemetryDtoConverter(), TelemetryDto.class))
-                .name("Telemetry Side Output")
-                .uid("telemetry-side-output");
+        deserializedTelemetry
+                .keyBy(new KeySelector<TelemetryDto, String>() {
+                    private static final long serialVersionUID = -8796407799015234967L;
 
-        flattenTelemetryStream.getSideOutput(telemetryLogOutput)
-                .addSink(logTelemetry)
-                .name("Log Telemetry")
-                .uid("tempo-log-telemetry");
+                    @Override
+                    public String getKey(TelemetryDto telemetryDto) throws Exception {
+                        return telemetryDto.getAssetId();
+                    }
+                })
+                .connect(broadcast)
+                .process(new DynamicValidationFunction(deadLetterOutput));
+
+//        SingleOutputStreamOperator<TelemetryDto> validatedTelemetryStream = deserialize_telemetry
+//                .process(new TelemetryValidationFunction(outputTag))
+//                .name("Telemetry Validation Output")
+//                .uid("telemetry-validation-output");
+
+        deserializedTelemetry.print();
+
+//        validatedTelemetryStream.getSideOutput(outputTag)
+//                .addSink(deadLetterSink)
+//                .name("Sink Invalid Telemetry data to Dead Letter Queue")
+//                .uid("dead-letter-queue-sink");
+
+//        outputTag = new OutputTag<>("telemetry-cache", TypeInformation.of(TelemetryDto.class));
+//        SingleOutputStreamOperator<TelemetryDto> flattenTelemetryStream = validatedTelemetryStream
+//                .process(new SideOutputProcessFunction<>(outputTag, new TelemetryDtoConverter(), TelemetryDto.class))
+//                .name("Telemetry Side Output")
+//                .uid("telemetry-side-output");
 
 //        SingleOutputStreamOperator<ControllerDto> controllerStream = rawControllerStream
 //                .map(new DeserializeMapFunction<>(ControllerDto.class))
@@ -142,22 +167,22 @@ public class IngestPipeline {
 
 //        DataStream<ControllerDto> controllerMergeStream = ste.toAppendStream(mergedTable, ControllerDto.class);
 
-        DataStream<TelemetryFeatureWrapper> telemetryFeatureStream = flattenTelemetryStream.getSideOutput(deadLetterOutput)
-                .map(new TelemetryConverter())
-                .name("Telemetry Feature converter")
-                .uid("telemetry-feature-converter");
-
-        telemetryFeatureStream.addSink(machineDataSink)
-                .name("Sink Telemetry data to Geomesa")
-                .uid("telemetry-geomesa-sink");
+//        DataStream<TelemetryFeatureWrapper> telemetryFeatureStream = flattenTelemetryStream.getSideOutput(outputTag)
+//                .map(new TelemetryConverter())
+//                .name("Telemetry Feature converter")
+//                .uid("telemetry-feature-converter");
+//
+//        telemetryFeatureStream.addSink(machineDataSink)
+//                .name("Sink Telemetry data to Buffered List")
+//                .uid("telemetry-geomesa-sink");
 
 //        DataStream<SimpleFeatureImpl> controllerFeatureStream = controllerStream
 //                .map(new GeomesaControllerFeatureConverter())
 //                .name("Controller Feature converter")
 //                .uid("controller-feature-converter");
-
+//
 //        controllerFeatureStream.addSink(new PrintSinkFunction<>())
-//                .name("Sink Controller data to Geomesa")
+//                .name("Sink Controller data to Buffered List")
 //                .uid("controller-geomesa-sink");
     }
 

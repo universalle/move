@@ -24,12 +24,16 @@
 
         <flink.version>1.9.1</flink.version>
         <flink-shaded-jackson.version>2.9.8-7.0</flink-shaded-jackson.version>
-        <groovy-all.version>2.5.9</groovy-all.version>
         <scala.binary.version>2.11</scala.binary.version>
         <spring.boot.version>2.2.2.RELEASE</spring.boot.version>
     </properties>
 
     <repositories>
+        <repository>
+            <id>central</id>
+            <name>Maven Central</name>
+            <url>http://repo1.maven.org/maven2/</url>
+        </repository>
         <repository>
             <id>osgeo</id>
             <name>osgeo</name>
@@ -106,7 +110,8 @@
             <dependency>
                 <groupId>org.codehaus.groovy</groupId>
                 <artifactId>groovy-all</artifactId>
-                <version>${groovy-all.version}</version>
+                <version>2.5.9</version>
+                <type>pom</type>
             </dependency>
             <dependency>
                 <groupId>org.junit.jupiter</groupId>

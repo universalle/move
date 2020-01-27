@@ -1,7 +1,7 @@
 package com.cnhindustrial.telemetry.pipeline;
 
 import com.cnhindustrial.telemetry.function.ReadLinesSourceFunction;
-import com.cnhindustrial.telemetry.test.MachineDataCollectSink;
+import com.cnhindustrial.telemetry.test.SimpleCollectSink;
 import com.cnhindustrial.telemetry.test.MiniClusterWithClientResourceExtension;
 import com.twitter.chill.java.UnmodifiableMapSerializer;
 
@@ -27,7 +27,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 class IngestPipelineTest {
 
     private StreamExecutionEnvironment see;
-    private MachineDataCollectSink machineDataCollectSink;
+    private SimpleCollectSink collectSink;
     private FunctionFactory functionFactory;
     private SourceFunction<byte[]> telemetrySource;
 
@@ -45,6 +45,7 @@ class IngestPipelineTest {
 
         Map<String, String> map = new HashMap<>();
         map.put("blob.storage.controller.data.path", "src/test/resources/com/cnhindustrial/telemetry/data/controller");
+        map.put("blob.storage.dynamic.validation.path", "src/test/resources/com/cnhindustrial/telemetry/data/validation");
         map.put("environment.test", "true");
         ParameterTool parameters = ParameterTool
                 .fromMap(map);
@@ -53,12 +54,12 @@ class IngestPipelineTest {
         telemetrySource = new ReadLinesSourceFunction(
                 "src/test/resources/com/cnhindustrial/telemetry/data/telemetry/messages.txt");
 
-        machineDataCollectSink = new MachineDataCollectSink();
+        collectSink = new SimpleCollectSink();
     }
 
     @AfterEach
     void tearDown() {
-        machineDataCollectSink.clear();
+        collectSink.clear();
     }
 
     @Test
@@ -66,13 +67,14 @@ class IngestPipelineTest {
         IngestPipeline ingestPipeline = new IngestPipeline(
                 telemetrySource,
                 functionFactory.getControllerDataSource(see),
+                functionFactory.getDynamicValidationSource(see),
                 new DiscardingSink<>(),
                 new PrintSinkFunction<>(),
-                machineDataCollectSink);
+                collectSink);
 
         ingestPipeline.build(see);
         ingestPipeline.execute(see);
 
-        assertThat(machineDataCollectSink.getValues().size(), Matchers.is(2));
+        assertThat(collectSink.getValues().size(), Matchers.is(2));
     }
 }

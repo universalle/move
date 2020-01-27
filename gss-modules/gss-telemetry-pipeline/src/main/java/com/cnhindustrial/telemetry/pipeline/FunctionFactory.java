@@ -5,10 +5,8 @@ import com.cnhindustrial.telemetry.common.groovy.GroovyScript;
 import com.cnhindustrial.telemetry.common.json.FileBytesInputFormat;
 import com.cnhindustrial.telemetry.common.json.FileGroovyInputFormat;
 import com.cnhindustrial.telemetry.common.model.TelemetryDto;
-
 import com.cnhindustrial.telemetry.model.TelemetryFeatureWrapper;
 
-import org.apache.flink.api.common.io.FileInputFormat;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;

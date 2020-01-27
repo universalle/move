@@ -2,55 +2,49 @@ package com.cnhindustrial.telemetry.function;
 
 import com.cnhindustrial.telemetry.common.groovy.GroovyScript;
 import com.cnhindustrial.telemetry.common.model.TelemetryDto;
+import com.cnhindustrial.telemetry.pipeline.IngestPipeline;
 
-import org.apache.flink.api.common.state.ValueState;
-import org.apache.flink.api.common.state.ValueStateDescriptor;
-import org.apache.flink.configuration.Configuration;
-import org.apache.flink.streaming.api.functions.co.CoProcessFunction;
+import org.apache.flink.api.common.state.BroadcastState;
+import org.apache.flink.streaming.api.functions.co.KeyedBroadcastProcessFunction;
 import org.apache.flink.util.Collector;
 import org.apache.flink.util.OutputTag;
 
-import java.io.IOException;
 import java.util.List;
 
-public class DynamicValidationFunction extends CoProcessFunction<TelemetryDto, GroovyScript, TelemetryDto> {
+public class DynamicValidationFunction extends KeyedBroadcastProcessFunction<String, TelemetryDto, GroovyScript, TelemetryDto> {
 
     private static final long serialVersionUID = -7884725991052695509L;
 
-    private final OutputTag<TelemetryDto> outputTag;
+    private final OutputTag<TelemetryDto> invalidOutputTag;
 
-    private ValueState<GroovyScript> ruleState;
-
-    public DynamicValidationFunction(OutputTag<TelemetryDto> outputTag) {
-        this.outputTag = outputTag;
+    public DynamicValidationFunction(OutputTag<TelemetryDto> invalidOutputTag) {
+        this.invalidOutputTag = invalidOutputTag;
     }
 
     @Override
-    public void open(Configuration parameters) throws Exception {
-        ValueStateDescriptor<GroovyScript> ruleDescriptor =
-                new ValueStateDescriptor<>("validation-rule", GroovyScript.class);
+    public void processElement(TelemetryDto value, ReadOnlyContext readOnlyContext, Collector<TelemetryDto> collector) throws Exception {
 
-        ruleState = getRuntimeContext().getState(ruleDescriptor);
-    }
+        GroovyScript script = readOnlyContext.getBroadcastState(IngestPipeline.DYNAMIC_VALIDATION_DESCRIPTOR).get("scripts");
 
-    @Override
-    public void processElement1(TelemetryDto value, Context context, Collector<TelemetryDto> collector) throws Exception {
-        if (valid(value)) {
+        if (valid(script, value)) {
             collector.collect(value);
         } else {
-            context.output(outputTag, value);
+            readOnlyContext.output(invalidOutputTag, value);
         }
 
     }
 
-    private boolean valid(TelemetryDto value) throws IOException {
-        GroovyScript groovyScript = ruleState.value();
+    private boolean valid(GroovyScript groovyScript, TelemetryDto value) {
+
         List<Error> errors = groovyScript.evaluate(value);
         return errors.isEmpty();
     }
 
     @Override
-    public void processElement2(GroovyScript value, Context ctx, Collector<TelemetryDto> out) throws Exception {
-        ruleState.update(value);
+    public void processBroadcastElement(GroovyScript groovyScript, Context context, Collector<TelemetryDto> collector) throws Exception {
+        // store the new pattern by updating the broadcast state
+        BroadcastState<String, GroovyScript> bcState = context.getBroadcastState(IngestPipeline.DYNAMIC_VALIDATION_DESCRIPTOR);
+        // storing in MapState with null as VOID default value
+        bcState.put("scripts", groovyScript);
     }
 }
