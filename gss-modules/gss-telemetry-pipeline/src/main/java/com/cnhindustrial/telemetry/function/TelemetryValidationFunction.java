@@ -1,6 +1,6 @@
 package com.cnhindustrial.telemetry.function;
 
-import com.cnhindustrial.telemetry.common.model.ValidationRules;
+import com.cnhindustrial.telemetry.common.model.TelemetryValidationRules;
 import com.cnhindustrial.telemetry.common.model.TelemetryDto;
 import org.apache.flink.streaming.api.functions.ProcessFunction;
 import org.apache.flink.util.Collector;
@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 public class TelemetryValidationFunction extends ProcessFunction<TelemetryDto, TelemetryDto> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TelemetryValidationFunction.class);
+    private static final long serialVersionUID = -5985712453775192298L;
 
     private final OutputTag<TelemetryDto> outputTag;
 
@@ -31,7 +32,7 @@ public class TelemetryValidationFunction extends ProcessFunction<TelemetryDto, T
     }
 
     private boolean passedValidation(TelemetryDto value) {
-        for (ValidationRules validationRule : ValidationRules.values()) {
+        for (TelemetryValidationRules validationRule : TelemetryValidationRules.values()) {
             if (!validationRule.validate(value)) {
                 return false;
             }

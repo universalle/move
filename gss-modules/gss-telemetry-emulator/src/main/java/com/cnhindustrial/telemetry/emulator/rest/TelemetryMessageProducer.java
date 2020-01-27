@@ -1,6 +1,6 @@
 package com.cnhindustrial.telemetry.emulator.rest;
 
-import com.cnhindustrial.telemetry.common.model.ValidationRules;
+import com.cnhindustrial.telemetry.common.model.TelemetryValidationRules;
 import com.cnhindustrial.telemetry.common.model.MessageType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -102,7 +102,7 @@ public class TelemetryMessageProducer implements Runnable {
     }
 
     private void setInvalidParam(Map<String, Object> inputParams) {
-        switch (ValidationRules.values()[random.nextInt(ValidationRules.values().length)]) {
+        switch (TelemetryValidationRules.values()[random.nextInt(TelemetryValidationRules.values().length)]) {
             case TIMESTAMP_AFTER:
                 inputParams.put("time", LocalDateTime.now().plusMonths(1).format(DATE_TIME_FORMATTER));
                 break;

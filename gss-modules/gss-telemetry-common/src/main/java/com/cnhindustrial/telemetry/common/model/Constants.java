@@ -2,7 +2,7 @@ package com.cnhindustrial.telemetry.common.model;
 
 import java.time.format.DateTimeFormatter;
 
-import static com.cnhindustrial.telemetry.common.json.BaseDeserializationSchema.ZULU_TIME_FORMAT;
+import static com.cnhindustrial.telemetry.common.json.ObjectMapperHelper.ZULU_TIME_FORMAT;
 
 public class Constants {
     public static final double MIN_LATITUDE = 37.018523;

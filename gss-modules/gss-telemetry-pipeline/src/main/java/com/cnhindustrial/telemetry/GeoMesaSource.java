@@ -22,6 +22,7 @@ import java.util.function.Function;
 public class GeoMesaSource extends RichSourceFunction<SimpleFeature> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GeoMesaSource.class);
+    private static final long serialVersionUID = 3764587383375439614L;
 
     private final Query query;
     private transient DataStore datastore;
