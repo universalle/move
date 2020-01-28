@@ -12,6 +12,7 @@
 
     <modules>
         <module>gss-telemetry-emulator</module>
+		<module>gss-controller-emulator</module>
         <module>gss-telemetry-common</module>
         <module>gss-telemetry-pipeline</module>
     </modules>
